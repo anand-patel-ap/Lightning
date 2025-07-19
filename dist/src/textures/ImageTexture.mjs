@@ -33,8 +33,6 @@ export default class ImageTexture extends Texture {
     }
 
     set src(v) {
-        console.log('anand src load', src);
-        
         if (this._src !== v) {
             this._src = v;
             this._changed();

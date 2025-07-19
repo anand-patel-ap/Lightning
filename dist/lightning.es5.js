@@ -1,5 +1,5 @@
 /*
- * Lightning v2.15.0
+ * Lightning v2.15.0-rtl.0
  *
  * https://github.com/rdkcentral/Lightning
  */
@@ -6276,7 +6276,6 @@ var __publicField = (obj, key, value) => {
         return this._src;
       },
       set: function set2(v) {
-        console.log("anand src load", src);
         if (this._src !== v) {
           this._src = v;
           this._changed();
@@ -6307,18 +6306,18 @@ var __publicField = (obj, key, value) => {
       key: "_getSourceLoader",
       value: function _getSourceLoader() {
         var _this2 = this;
-        var src2 = this._src;
+        var src = this._src;
         var hasAlpha = this._hasAlpha;
         if (this.stage.getOption("srcBasePath")) {
-          var fc = src2.charCodeAt(0);
-          if (src2.indexOf("//") === -1 && (fc >= 65 && fc <= 90 || fc >= 97 && fc <= 122 || fc == 46)) {
-            src2 = this.stage.getOption("srcBasePath") + src2;
+          var fc = src.charCodeAt(0);
+          if (src.indexOf("//") === -1 && (fc >= 65 && fc <= 90 || fc >= 97 && fc <= 122 || fc == 46)) {
+            src = this.stage.getOption("srcBasePath") + src;
           }
         }
         return (function(cb) {
           _newArrowCheck(this, _this2);
           return this.stage.platform.loadSrcTexture({
-            src: src2,
+            src,
             hasAlpha
           }, cb);
         }).bind(this);
@@ -7867,8 +7866,6 @@ var __publicField = (obj, key, value) => {
           parts.push("ls" + this.letterSpacing);
         if (this.textIndent !== null)
           parts.push("ti" + this.textIndent);
-        if (this.rtl)
-          parts.push("rtl");
         if (this.cutSx)
           parts.push("csx" + this.cutSx);
         if (this.cutEx)
@@ -7890,7 +7887,7 @@ var __publicField = (obj, key, value) => {
         return function(cb) {
           var _this2 = this;
           var canvas = this.stage.platform.getDrawingCanvas();
-          var renderer = TextTexture2.renderer(this.stage, canvas, args);
+          var renderer = args.advancedRenderer ? new TextTextureRendererAdvanced(this.stage, canvas, args) : new TextTextureRenderer(this.stage, canvas, args);
           var p = renderer.draw();
           var texParams = {};
           var sharpCfg = this.stage.getOption("fontSharp");
@@ -7999,7 +7996,7 @@ var __publicField = (obj, key, value) => {
           nonDefaults["letterSpacing"] = this.letterSpacing;
         if (this.textIndent !== 0)
           nonDefaults["textIndent"] = this.textIndent;
-        if (this.rtl)
+        if (this.rtl !== 0)
           nonDefaults["rtl"] = this.rtl;
         if (this.cutSx)
           nonDefaults["cutSx"] = this.cutSx;
@@ -8063,7 +8060,7 @@ var __publicField = (obj, key, value) => {
     }], [{
       key: "renderer",
       value: function renderer(stage, canvas, settings) {
-        if (settings.advancedRenderer || TextTexture2.forceAdvancedRenderer) {
+        if (this.advancedRenderer) {
           return new TextTextureRendererAdvanced(stage, canvas, settings);
         } else {
           return new TextTextureRenderer(stage, canvas, settings);
@@ -8071,8 +8068,6 @@ var __publicField = (obj, key, value) => {
       }
     }]);
   }(Texture);
-  _defineProperty(TextTexture, "forceAdvancedRenderer", false);
-  _defineProperty(TextTexture, "allowTextTruncation", true);
   var proto = TextTexture.prototype;
   proto._text = "";
   proto._w = 0;
@@ -8107,7 +8102,7 @@ var __publicField = (obj, key, value) => {
   proto._highlightPaddingRight = 0;
   proto._letterSpacing = 0;
   proto._textIndent = 0;
-  proto._rtl = false;
+  proto._rtl = 0;
   proto._cutSx = 0;
   proto._cutEx = 0;
   proto._cutSy = 0;
@@ -12772,16 +12767,16 @@ var __publicField = (obj, key, value) => {
       }
     }, {
       key: "_glCompile",
-      value: function _glCompile(type, src2) {
+      value: function _glCompile(type, src) {
         var _this = this;
         var shader = this.gl.createShader(type);
-        this.gl.shaderSource(shader, src2);
+        this.gl.shaderSource(shader, src);
         this.gl.compileShader(shader);
         if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
           console.error("[Lightning]", this.constructor.name, "Type: " + (type === this.gl.VERTEX_SHADER ? "vertex shader" : "fragment shader"));
           console.error("[Lightning]", this.gl.getShaderInfoLog(shader));
           var idx = 0;
-          console.error("[Lightning]", "========== source ==========\n" + src2.split("\n").map((function(line) {
+          console.error("[Lightning]", "========== source ==========\n" + src.split("\n").map((function(line) {
             _newArrowCheck(this, _this);
             return "" + ++idx + ": " + line;
           }).bind(this)).join("\n"));
@@ -14205,14 +14200,14 @@ var __publicField = (obj, key, value) => {
       }
     }, {
       key: "create",
-      value: function create(src2) {
+      value: function create(src) {
         var id = ++this._id;
-        var item = new ImageWorkerImage(this, id, src2);
+        var item = new ImageWorkerImage(this, id, src);
         this._items.set(id, item);
         this._worker.postMessage({
           type: "add",
           id,
-          src: src2
+          src
         });
         return item;
       }
@@ -14240,11 +14235,11 @@ var __publicField = (obj, key, value) => {
     }]);
   }();
   var ImageWorkerImage = /* @__PURE__ */ function() {
-    function ImageWorkerImage2(manager, id, src2) {
+    function ImageWorkerImage2(manager, id, src) {
       _classCallCheck(this, ImageWorkerImage2);
       this._manager = manager;
       this._id = id;
-      this._src = src2;
+      this._src = src;
       this._onError = null;
       this._onLoad = null;
     }
@@ -14317,14 +14312,14 @@ var __publicField = (obj, key, value) => {
         this.cancel(e.data.id);
       }
     };
-    ImageWorkerServer.prototype.add = function(id, src2) {
-      if (!ImageWorkerServer.isPathAbsolute(src2)) {
-        src2 = this._relativeBase + src2;
+    ImageWorkerServer.prototype.add = function(id, src) {
+      if (!ImageWorkerServer.isPathAbsolute(src)) {
+        src = this._relativeBase + src;
       }
-      if (src2.substr(0, 2) === "//") {
-        src2 = this.config.protocol + src2;
+      if (src.substr(0, 2) === "//") {
+        src = this.config.protocol + src;
       }
-      var item = new ImageWorkerServerItem(id, src2);
+      var item = new ImageWorkerServerItem(id, src);
       var t = this;
       item.onFinish = function(result) {
         t.finish(item, result);
@@ -14369,11 +14364,11 @@ var __publicField = (obj, key, value) => {
     ImageWorkerServer.isWPEBrowser = function() {
       return navigator.userAgent.indexOf("WPE") !== -1;
     };
-    function ImageWorkerServerItem(id, src2) {
+    function ImageWorkerServerItem(id, src) {
       this._onError = void 0;
       this._onFinish = void 0;
       this._id = id;
-      this._src = src2;
+      this._src = src;
       this._xhr = void 0;
       this._mimeType = void 0;
       this._canceled = false;
@@ -14590,7 +14585,7 @@ var __publicField = (obj, key, value) => {
       }
     }, {
       key: "handleKtxLoad",
-      value: function handleKtxLoad(cb, src2) {
+      value: function handleKtxLoad(cb, src) {
         var self2 = this;
         return function() {
           var _this2 = this;
@@ -14598,7 +14593,7 @@ var __publicField = (obj, key, value) => {
           var view = new DataView(arraybuffer);
           var targetIdentifier = 3632701469;
           if (targetIdentifier !== view.getUint32(0) + view.getUint32(4) + view.getUint32(8)) {
-            cb("Parsing failed: identifier ktx mismatch:", src2);
+            cb("Parsing failed: identifier ktx mismatch:", src);
           }
           var littleEndian = view.getUint32(12) === 16909060 ? true : false;
           var data = {
@@ -14642,7 +14637,7 @@ var __publicField = (obj, key, value) => {
             return prev.concat(current);
           }).bind(this));
           if (!formats.includes(data.glInternalFormat)) {
-            console.warn("[Lightning] Unrecognized texture extension format:", src2, data.glInternalFormat, self2.stage.renderer.getCompressedTextureExtensions());
+            console.warn("[Lightning] Unrecognized texture extension format:", src, data.glInternalFormat, self2.stage.renderer.getCompressedTextureExtensions());
           }
           var offset = 64;
           offset += data.bytesOfKeyValueData;
@@ -14655,7 +14650,7 @@ var __publicField = (obj, key, value) => {
           cb(null, {
             source: data,
             renderInfo: {
-              src: src2,
+              src,
               compressed: true
             }
           });
@@ -14663,7 +14658,7 @@ var __publicField = (obj, key, value) => {
       }
     }, {
       key: "handlePvrLoad",
-      value: function handlePvrLoad(cb, src2) {
+      value: function handlePvrLoad(cb, src) {
         return function() {
           var pvrHeaderLength = 13;
           var pvrFormatEtc1 = 36196;
@@ -14703,7 +14698,7 @@ var __publicField = (obj, key, value) => {
           cb(null, {
             source: data,
             renderInfo: {
-              src: src2,
+              src,
               compressed: true
             }
           });
@@ -14712,23 +14707,22 @@ var __publicField = (obj, key, value) => {
     }, {
       key: "loadSrcTexture",
       value: function loadSrcTexture(_ref, cb) {
-        var src2 = _ref.src, hasAlpha = _ref.hasAlpha;
-        console.trace("anand src load", src2);
+        var src = _ref.src, hasAlpha = _ref.hasAlpha;
         var cancelCb = void 0;
-        var isPng = src2.toLowerCase().indexOf(".png") >= 0 || src2.substr(0, 21) == "data:image/png;base64";
-        var isKtx = src2.indexOf(".ktx") >= 0;
-        var isPvr = src2.indexOf(".pvr") >= 0;
+        var isPng = src.toLowerCase().indexOf(".png") >= 0 || src.substr(0, 21) == "data:image/png;base64";
+        var isKtx = src.indexOf(".ktx") >= 0;
+        var isPvr = src.indexOf(".pvr") >= 0;
         if (isKtx || isPvr) {
           var request = new XMLHttpRequest();
-          request.addEventListener("load", isKtx ? this.handleKtxLoad(cb, src2) : this.handlePvrLoad(cb, src2));
-          request.open("GET", src2);
+          request.addEventListener("load", isKtx ? this.handleKtxLoad(cb, src) : this.handlePvrLoad(cb, src));
+          request.open("GET", src);
           request.responseType = "arraybuffer";
           request.send();
           cancelCb = function cancelCb2() {
             request.abort();
           };
         } else if (this._imageWorker) {
-          var image = this._imageWorker.create(src2);
+          var image = this._imageWorker.create(src);
           image.onError = function(err) {
             return cb("Image load error");
           };
@@ -14737,7 +14731,7 @@ var __publicField = (obj, key, value) => {
             cb(null, {
               source: imageBitmap,
               renderInfo: {
-                src: src2,
+                src,
                 compressed: false
               },
               hasAlpha: hasAlphaChannel,
@@ -14749,7 +14743,7 @@ var __publicField = (obj, key, value) => {
           };
         } else {
           var _image = new Image();
-          if (!(src2.substr(0, 5) == "data:") && !Utils$1.isPS4) {
+          if (!(src.substr(0, 5) == "data:") && !Utils$1.isPS4) {
             _image.crossOrigin = "Anonymous";
           }
           _image.onerror = function(err) {
@@ -14761,13 +14755,13 @@ var __publicField = (obj, key, value) => {
             cb(null, {
               source: _image,
               renderInfo: {
-                src: src2,
+                src,
                 compressed: false
               },
               hasAlpha: isPng || hasAlpha
             });
           };
-          _image.src = src2;
+          _image.src = src;
           cancelCb = function cancelCb2() {
             _image.onerror = null;
             _image.onload = null;

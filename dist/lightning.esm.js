@@ -1,5 +1,5 @@
 /*
- * Lightning v2.15.0
+ * Lightning v2.15.0-rtl.0
  *
  * https://github.com/rdkcentral/Lightning
  */
@@ -4877,7 +4877,6 @@ class ImageTexture extends Texture {
     return this._src;
   }
   set src(v) {
-    console.log("anand src load", src);
     if (this._src !== v) {
       this._src = v;
       this._changed();
@@ -4899,16 +4898,16 @@ class ImageTexture extends Texture {
     return this._src;
   }
   _getSourceLoader() {
-    let src2 = this._src;
+    let src = this._src;
     let hasAlpha = this._hasAlpha;
     if (this.stage.getOption("srcBasePath")) {
-      var fc = src2.charCodeAt(0);
-      if (src2.indexOf("//") === -1 && (fc >= 65 && fc <= 90 || fc >= 97 && fc <= 122 || fc == 46)) {
-        src2 = this.stage.getOption("srcBasePath") + src2;
+      var fc = src.charCodeAt(0);
+      if (src.indexOf("//") === -1 && (fc >= 65 && fc <= 90 || fc >= 97 && fc <= 122 || fc == 46)) {
+        src = this.stage.getOption("srcBasePath") + src;
       }
     }
     return (cb) => {
-      return this.stage.platform.loadSrcTexture({ src: src2, hasAlpha }, cb);
+      return this.stage.platform.loadSrcTexture({ src, hasAlpha }, cb);
     };
   }
   getNonDefaults() {
@@ -5916,13 +5915,13 @@ class TextTextureRendererAdvanced extends TextTextureRenderer {
     }
   }
 }
-const _TextTexture = class _TextTexture extends Texture {
+class TextTexture extends Texture {
   constructor(stage) {
     super(stage);
     this._precision = this.stage.getOption("precision");
   }
   static renderer(stage, canvas, settings) {
-    if (settings.advancedRenderer || _TextTexture.forceAdvancedRenderer) {
+    if (this.advancedRenderer) {
       return new TextTextureRendererAdvanced(stage, canvas, settings);
     } else {
       return new TextTextureRenderer(stage, canvas, settings);
@@ -6313,7 +6312,9 @@ const _TextTexture = class _TextTexture extends Texture {
     if (this.fontBaselineRatio !== 0)
       parts.push("fb" + this.fontBaselineRatio);
     if (this.fontFace !== null)
-      parts.push("ff" + (Array.isArray(this.fontFace) ? this.fontFace.join(",") : this.fontFace));
+      parts.push(
+        "ff" + (Array.isArray(this.fontFace) ? this.fontFace.join(",") : this.fontFace)
+      );
     if (this.wordWrap !== true)
       parts.push("wr" + (this.wordWrap ? 1 : 0));
     if (this.wordWrapWidth !== 0)
@@ -6369,8 +6370,6 @@ const _TextTexture = class _TextTexture extends Texture {
       parts.push("ls" + this.letterSpacing);
     if (this.textIndent !== null)
       parts.push("ti" + this.textIndent);
-    if (this.rtl)
-      parts.push("rtl");
     if (this.cutSx)
       parts.push("csx" + this.cutSx);
     if (this.cutEx)
@@ -6389,7 +6388,7 @@ const _TextTexture = class _TextTexture extends Texture {
     const gl = this.stage.gl;
     return function(cb) {
       const canvas = this.stage.platform.getDrawingCanvas();
-      const renderer = _TextTexture.renderer(this.stage, canvas, args);
+      const renderer = args.advancedRenderer ? new TextTextureRendererAdvanced(this.stage, canvas, args) : new TextTextureRenderer(this.stage, canvas, args);
       const p = renderer.draw();
       const texParams = {};
       const sharpCfg = this.stage.getOption("fontSharp");
@@ -6405,20 +6404,32 @@ const _TextTexture = class _TextTexture extends Texture {
       }
       if (p) {
         p.then(() => {
-          cb(null, Object.assign({
-            renderInfo: renderer.renderInfo,
-            throttle: false,
-            texParams
-          }, this.stage.platform.getTextureOptionsForDrawingCanvas(canvas)));
+          cb(
+            null,
+            Object.assign(
+              {
+                renderInfo: renderer.renderInfo,
+                throttle: false,
+                texParams
+              },
+              this.stage.platform.getTextureOptionsForDrawingCanvas(canvas)
+            )
+          );
         }).catch((err) => {
           cb(err);
         });
       } else {
-        cb(null, Object.assign({
-          renderInfo: renderer.renderInfo,
-          throttle: false,
-          texParams
-        }, this.stage.platform.getTextureOptionsForDrawingCanvas(canvas)));
+        cb(
+          null,
+          Object.assign(
+            {
+              renderInfo: renderer.renderInfo,
+              throttle: false,
+              texParams
+            },
+            this.stage.platform.getTextureOptionsForDrawingCanvas(canvas)
+          )
+        );
       }
     };
   }
@@ -6494,7 +6505,7 @@ const _TextTexture = class _TextTexture extends Texture {
       nonDefaults["letterSpacing"] = this.letterSpacing;
     if (this.textIndent !== 0)
       nonDefaults["textIndent"] = this.textIndent;
-    if (this.rtl)
+    if (this.rtl !== 0)
       nonDefaults["rtl"] = this.rtl;
     if (this.cutSx)
       nonDefaults["cutSx"] = this.cutSx;
@@ -6553,10 +6564,7 @@ const _TextTexture = class _TextTexture extends Texture {
     obj.advancedRenderer = this._advancedRenderer;
     return obj;
   }
-};
-__publicField(_TextTexture, "forceAdvancedRenderer", false);
-__publicField(_TextTexture, "allowTextTruncation", true);
-let TextTexture = _TextTexture;
+}
 let proto = TextTexture.prototype;
 proto._text = "";
 proto._w = 0;
@@ -6591,7 +6599,7 @@ proto._highlightPaddingLeft = 0;
 proto._highlightPaddingRight = 0;
 proto._letterSpacing = 0;
 proto._textIndent = 0;
-proto._rtl = false;
+proto._rtl = 0;
 proto._cutSx = 0;
 proto._cutEx = 0;
 proto._cutSy = 0;
@@ -10338,15 +10346,15 @@ class WebGLShaderProgram {
     gl.deleteShader(glVertShader);
     gl.deleteShader(glFragShader);
   }
-  _glCompile(type, src2) {
+  _glCompile(type, src) {
     let shader = this.gl.createShader(type);
-    this.gl.shaderSource(shader, src2);
+    this.gl.shaderSource(shader, src);
     this.gl.compileShader(shader);
     if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
       console.error("[Lightning]", this.constructor.name, "Type: " + (type === this.gl.VERTEX_SHADER ? "vertex shader" : "fragment shader"));
       console.error("[Lightning]", this.gl.getShaderInfoLog(shader));
       let idx = 0;
-      console.error("[Lightning]", "========== source ==========\n" + src2.split("\n").map((line) => "" + ++idx + ": " + line).join("\n"));
+      console.error("[Lightning]", "========== source ==========\n" + src.split("\n").map((line) => "" + ++idx + ": " + line).join("\n"));
       return null;
     }
     return shader;
@@ -11488,11 +11496,11 @@ class ImageWorker {
       }
     };
   }
-  create(src2) {
+  create(src) {
     const id = ++this._id;
-    const item = new ImageWorkerImage(this, id, src2);
+    const item = new ImageWorkerImage(this, id, src);
     this._items.set(id, item);
-    this._worker.postMessage({ type: "add", id, src: src2 });
+    this._worker.postMessage({ type: "add", id, src });
     return item;
   }
   cancel(image) {
@@ -11509,10 +11517,10 @@ class ImageWorker {
   }
 }
 class ImageWorkerImage {
-  constructor(manager, id, src2) {
+  constructor(manager, id, src) {
     this._manager = manager;
     this._id = id;
-    this._src = src2;
+    this._src = src;
     this._onError = null;
     this._onLoad = null;
   }
@@ -11570,14 +11578,14 @@ const createWorker = function() {
       this.cancel(e.data.id);
     }
   };
-  ImageWorkerServer.prototype.add = function(id, src2) {
-    if (!ImageWorkerServer.isPathAbsolute(src2)) {
-      src2 = this._relativeBase + src2;
+  ImageWorkerServer.prototype.add = function(id, src) {
+    if (!ImageWorkerServer.isPathAbsolute(src)) {
+      src = this._relativeBase + src;
     }
-    if (src2.substr(0, 2) === "//") {
-      src2 = this.config.protocol + src2;
+    if (src.substr(0, 2) === "//") {
+      src = this.config.protocol + src;
     }
-    var item = new ImageWorkerServerItem(id, src2);
+    var item = new ImageWorkerServerItem(id, src);
     var t = this;
     item.onFinish = function(result) {
       t.finish(item, result);
@@ -11620,11 +11628,11 @@ const createWorker = function() {
   ImageWorkerServer.isWPEBrowser = function() {
     return navigator.userAgent.indexOf("WPE") !== -1;
   };
-  function ImageWorkerServerItem(id, src2) {
+  function ImageWorkerServerItem(id, src) {
     this._onError = void 0;
     this._onFinish = void 0;
     this._id = id;
-    this._src = src2;
+    this._src = src;
     this._xhr = void 0;
     this._mimeType = void 0;
     this._canceled = false;
@@ -11714,9 +11722,7 @@ class WebPlatform {
     this._onIdle = false;
     if (this.stage.getOption("useImageWorker")) {
       if (!window.createImageBitmap || !window.Worker) {
-        console.warn(
-          "[Lightning] Can't use image worker because browser does not have createImageBitmap and Web Worker support"
-        );
+        console.warn("[Lightning] Can't use image worker because browser does not have createImageBitmap and Web Worker support");
       } else {
         this._imageWorker = new ImageWorker();
       }
@@ -11803,57 +11809,26 @@ class WebPlatform {
   }
   uploadGlTexture(gl, textureSource, source, options) {
     if (source instanceof ImageData || source instanceof HTMLImageElement || source instanceof HTMLVideoElement || window.ImageBitmap && source instanceof ImageBitmap) {
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        options.internalFormat,
-        options.format,
-        options.type,
-        source
-      );
+      gl.texImage2D(gl.TEXTURE_2D, 0, options.internalFormat, options.format, options.type, source);
     } else if (source instanceof HTMLCanvasElement) {
       if (Utils$1.isZiggo || this.stage.getOption("forceTxCanvasSource")) {
-        gl.texImage2D(
-          gl.TEXTURE_2D,
-          0,
-          options.internalFormat,
-          options.format,
-          options.type,
-          source
-        );
+        gl.texImage2D(gl.TEXTURE_2D, 0, options.internalFormat, options.format, options.type, source);
       } else if (source.width > 0 && source.height > 0) {
         const ctx = source.getContext("2d");
-        gl.texImage2D(
-          gl.TEXTURE_2D,
-          0,
-          options.internalFormat,
-          options.format,
-          options.type,
-          ctx.getImageData(0, 0, source.width, source.height)
-        );
+        gl.texImage2D(gl.TEXTURE_2D, 0, options.internalFormat, options.format, options.type, ctx.getImageData(0, 0, source.width, source.height));
       }
     } else {
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        options.internalFormat,
-        textureSource.w,
-        textureSource.h,
-        0,
-        options.format,
-        options.type,
-        source
-      );
+      gl.texImage2D(gl.TEXTURE_2D, 0, options.internalFormat, textureSource.w, textureSource.h, 0, options.format, options.type, source);
     }
   }
-  handleKtxLoad(cb, src2) {
+  handleKtxLoad(cb, src) {
     var self = this;
     return function() {
       var arraybuffer = this.response;
       var view = new DataView(arraybuffer);
       var targetIdentifier = 3632701469;
       if (targetIdentifier !== view.getUint32(0) + view.getUint32(4) + view.getUint32(8)) {
-        cb("Parsing failed: identifier ktx mismatch:", src2);
+        cb("Parsing failed: identifier ktx mismatch:", src);
       }
       var littleEndian = view.getUint32(12) === 16909060 ? true : false;
       var data = {
@@ -11885,16 +11860,9 @@ class WebPlatform {
         }
         return p;
       };
-      const formats = Object.values(
-        self.stage.renderer.getCompressedTextureExtensions()
-      ).filter((obj) => obj != null).map((obj) => props(obj)).reduce((prev, current) => prev.concat(current));
+      const formats = Object.values(self.stage.renderer.getCompressedTextureExtensions()).filter((obj) => obj != null).map((obj) => props(obj)).reduce((prev, current) => prev.concat(current));
       if (!formats.includes(data.glInternalFormat)) {
-        console.warn(
-          "[Lightning] Unrecognized texture extension format:",
-          src2,
-          data.glInternalFormat,
-          self.stage.renderer.getCompressedTextureExtensions()
-        );
+        console.warn("[Lightning] Unrecognized texture extension format:", src, data.glInternalFormat, self.stage.renderer.getCompressedTextureExtensions());
       }
       var offset = 64;
       offset += data.bytesOfKeyValueData;
@@ -11906,11 +11874,11 @@ class WebPlatform {
       }
       cb(null, {
         source: data,
-        renderInfo: { src: src2, compressed: true }
+        renderInfo: { src, compressed: true }
       });
     };
   }
-  handlePvrLoad(cb, src2) {
+  handlePvrLoad(cb, src) {
     return function() {
       const pvrHeaderLength = 13;
       const pvrFormatEtc1 = 36196;
@@ -11941,11 +11909,7 @@ class WebPlatform {
       let height = data.pixelHeight;
       for (var i = 0; i < data.numberOfMipmapLevels; i++) {
         const level = (width + 3 >> 2) * (height + 3 >> 2) * 8;
-        const view = new Uint8Array(
-          arrayBuffer,
-          pvrtcData.byteOffset + offset,
-          level
-        );
+        const view = new Uint8Array(arrayBuffer, pvrtcData.byteOffset + offset, level);
         data.mipmaps.push(view);
         offset += level;
         width = width >> 1;
@@ -11953,37 +11917,36 @@ class WebPlatform {
       }
       cb(null, {
         source: data,
-        renderInfo: { src: src2, compressed: true }
+        renderInfo: { src, compressed: true }
       });
     };
   }
-  loadSrcTexture({ src: src2, hasAlpha }, cb) {
-    console.trace("anand src load", src2);
+  loadSrcTexture({ src, hasAlpha }, cb) {
     let cancelCb = void 0;
-    let isPng = src2.toLowerCase().indexOf(".png") >= 0 || src2.substr(0, 21) == "data:image/png;base64";
-    let isKtx = src2.indexOf(".ktx") >= 0;
-    let isPvr = src2.indexOf(".pvr") >= 0;
+    let isPng = src.toLowerCase().indexOf(".png") >= 0 || src.substr(0, 21) == "data:image/png;base64";
+    let isKtx = src.indexOf(".ktx") >= 0;
+    let isPvr = src.indexOf(".pvr") >= 0;
     if (isKtx || isPvr) {
       let request = new XMLHttpRequest();
       request.addEventListener(
         "load",
-        isKtx ? this.handleKtxLoad(cb, src2) : this.handlePvrLoad(cb, src2)
+        isKtx ? this.handleKtxLoad(cb, src) : this.handlePvrLoad(cb, src)
       );
-      request.open("GET", src2);
+      request.open("GET", src);
       request.responseType = "arraybuffer";
       request.send();
       cancelCb = function() {
         request.abort();
       };
     } else if (this._imageWorker) {
-      const image = this._imageWorker.create(src2);
+      const image = this._imageWorker.create(src);
       image.onError = function(err) {
         return cb("Image load error");
       };
       image.onLoad = function({ imageBitmap, hasAlphaChannel }) {
         cb(null, {
           source: imageBitmap,
-          renderInfo: { src: src2, compressed: false },
+          renderInfo: { src, compressed: false },
           hasAlpha: hasAlphaChannel,
           premultiplyAlpha: true
         });
@@ -11993,7 +11956,7 @@ class WebPlatform {
       };
     } else {
       let image = new Image();
-      if (!(src2.substr(0, 5) == "data:") && !Utils$1.isPS4) {
+      if (!(src.substr(0, 5) == "data:") && !Utils$1.isPS4) {
         image.crossOrigin = "Anonymous";
       }
       image.onerror = function(err) {
@@ -12004,11 +11967,11 @@ class WebPlatform {
       image.onload = function() {
         cb(null, {
           source: image,
-          renderInfo: { src: src2, compressed: false },
+          renderInfo: { src, compressed: false },
           hasAlpha: isPng || hasAlpha
         });
       };
-      image.src = src2;
+      image.src = src;
       cancelCb = function() {
         image.onerror = null;
         image.onload = null;
@@ -12121,17 +12084,11 @@ class WebPlatform {
         this.stage.renderFrame();
       }
     };
-    document.addEventListener(
-      "visibilitychange",
-      this._visibilityChangeHandler
-    );
+    document.addEventListener("visibilitychange", this._visibilityChangeHandler);
   }
   _removeVisibilityChangeHandler() {
     if (this._visibilityChangeHandler) {
-      document.removeEventListener(
-        "visibilitychange",
-        this._visibilityChangeHandler
-      );
+      document.removeEventListener("visibilitychange", this._visibilityChangeHandler);
     }
   }
 }
