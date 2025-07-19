@@ -101,10 +101,12 @@ export default class WebPlatform {
     }
 
     loop() {
+        // reset idle state
+        this._onIdle = false;
+
         let self = this;
         let lp = function () {
             self._awaitingLoop = false;
-            self._onIdle = false;
             if (self._looping) {
                 self.stage.updateFrame();
                 if (self.stage.getOption("pauseRafLoopOnIdle")) {
@@ -290,16 +292,6 @@ export default class WebPlatform {
             }
         } else if (this._imageWorker) {
             // WPE-specific image parser.
-            if (typeof src !== 'string') {
-                return cb("Invalid image URL");
-            }
-            
-            // URL can start with http://, https://, and //
-            const separatorPos = src.indexOf('//');
-            if (separatorPos !== 0 && separatorPos !== 5 && separatorPos !== 6) {
-                return cb("Invalid image URL");
-            }
-
             const image = this._imageWorker.create(src);
             image.onError = function (err) {
                 return cb("Image load error");
