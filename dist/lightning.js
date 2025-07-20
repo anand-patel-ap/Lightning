@@ -5737,7 +5737,7 @@ var __publicField = (obj, key, value) => {
             lastIndex = line.words.length - 1;
             word = line.words[lastIndex];
             index = lastIndex;
-            removeOppositeEnd = allowTruncation && word.width < suffixWidth * 2;
+            removeOppositeEnd = (allowTruncation && word && word.width < suffixWidth * 2) ?? false;
           }
         }
         while (line.width > maxLineWidth) {
@@ -5919,13 +5919,13 @@ var __publicField = (obj, key, value) => {
       }
     }
   }
-  class TextTexture extends Texture {
+  const _TextTexture = class _TextTexture extends Texture {
     constructor(stage) {
       super(stage);
       this._precision = this.stage.getOption("precision");
     }
     static renderer(stage, canvas, settings) {
-      if (this.advancedRenderer) {
+      if (settings.advancedRenderer || _TextTexture.forceAdvancedRenderer) {
         return new TextTextureRendererAdvanced(stage, canvas, settings);
       } else {
         return new TextTextureRenderer(stage, canvas, settings);
@@ -6316,9 +6316,7 @@ var __publicField = (obj, key, value) => {
       if (this.fontBaselineRatio !== 0)
         parts.push("fb" + this.fontBaselineRatio);
       if (this.fontFace !== null)
-        parts.push(
-          "ff" + (Array.isArray(this.fontFace) ? this.fontFace.join(",") : this.fontFace)
-        );
+        parts.push("ff" + (Array.isArray(this.fontFace) ? this.fontFace.join(",") : this.fontFace));
       if (this.wordWrap !== true)
         parts.push("wr" + (this.wordWrap ? 1 : 0));
       if (this.wordWrapWidth !== 0)
@@ -6374,6 +6372,8 @@ var __publicField = (obj, key, value) => {
         parts.push("ls" + this.letterSpacing);
       if (this.textIndent !== null)
         parts.push("ti" + this.textIndent);
+      if (this.rtl)
+        parts.push("rtl");
       if (this.cutSx)
         parts.push("csx" + this.cutSx);
       if (this.cutEx)
@@ -6392,7 +6392,7 @@ var __publicField = (obj, key, value) => {
       const gl = this.stage.gl;
       return function(cb) {
         const canvas = this.stage.platform.getDrawingCanvas();
-        const renderer = args.advancedRenderer ? new TextTextureRendererAdvanced(this.stage, canvas, args) : new TextTextureRenderer(this.stage, canvas, args);
+        const renderer = _TextTexture.renderer(this.stage, canvas, args);
         const p = renderer.draw();
         const texParams = {};
         const sharpCfg = this.stage.getOption("fontSharp");
@@ -6408,32 +6408,20 @@ var __publicField = (obj, key, value) => {
         }
         if (p) {
           p.then(() => {
-            cb(
-              null,
-              Object.assign(
-                {
-                  renderInfo: renderer.renderInfo,
-                  throttle: false,
-                  texParams
-                },
-                this.stage.platform.getTextureOptionsForDrawingCanvas(canvas)
-              )
-            );
+            cb(null, Object.assign({
+              renderInfo: renderer.renderInfo,
+              throttle: false,
+              texParams
+            }, this.stage.platform.getTextureOptionsForDrawingCanvas(canvas)));
           }).catch((err) => {
             cb(err);
           });
         } else {
-          cb(
-            null,
-            Object.assign(
-              {
-                renderInfo: renderer.renderInfo,
-                throttle: false,
-                texParams
-              },
-              this.stage.platform.getTextureOptionsForDrawingCanvas(canvas)
-            )
-          );
+          cb(null, Object.assign({
+            renderInfo: renderer.renderInfo,
+            throttle: false,
+            texParams
+          }, this.stage.platform.getTextureOptionsForDrawingCanvas(canvas)));
         }
       };
     }
@@ -6509,7 +6497,7 @@ var __publicField = (obj, key, value) => {
         nonDefaults["letterSpacing"] = this.letterSpacing;
       if (this.textIndent !== 0)
         nonDefaults["textIndent"] = this.textIndent;
-      if (this.rtl !== 0)
+      if (this.rtl)
         nonDefaults["rtl"] = this.rtl;
       if (this.cutSx)
         nonDefaults["cutSx"] = this.cutSx;
@@ -6568,7 +6556,10 @@ var __publicField = (obj, key, value) => {
       obj.advancedRenderer = this._advancedRenderer;
       return obj;
     }
-  }
+  };
+  __publicField(_TextTexture, "forceAdvancedRenderer", false);
+  __publicField(_TextTexture, "allowTextTruncation", true);
+  let TextTexture = _TextTexture;
   let proto = TextTexture.prototype;
   proto._text = "";
   proto._w = 0;
@@ -6603,7 +6594,7 @@ var __publicField = (obj, key, value) => {
   proto._highlightPaddingRight = 0;
   proto._letterSpacing = 0;
   proto._textIndent = 0;
-  proto._rtl = 0;
+  proto._rtl = false;
   proto._cutSx = 0;
   proto._cutEx = 0;
   proto._cutSy = 0;

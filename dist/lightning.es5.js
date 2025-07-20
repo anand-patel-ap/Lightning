@@ -7148,7 +7148,7 @@ var __publicField = (obj, key, value) => {
             lastIndex = line.words.length - 1;
             word = line.words[lastIndex];
             index = lastIndex;
-            removeOppositeEnd = allowTruncation && word.width < suffixWidth * 2;
+            removeOppositeEnd = (allowTruncation && word && word.width < suffixWidth * 2) ?? false;
           }
         }
         while (line.width > maxLineWidth) {
@@ -7866,6 +7866,8 @@ var __publicField = (obj, key, value) => {
           parts.push("ls" + this.letterSpacing);
         if (this.textIndent !== null)
           parts.push("ti" + this.textIndent);
+        if (this.rtl)
+          parts.push("rtl");
         if (this.cutSx)
           parts.push("csx" + this.cutSx);
         if (this.cutEx)
@@ -7887,7 +7889,7 @@ var __publicField = (obj, key, value) => {
         return function(cb) {
           var _this2 = this;
           var canvas = this.stage.platform.getDrawingCanvas();
-          var renderer = args.advancedRenderer ? new TextTextureRendererAdvanced(this.stage, canvas, args) : new TextTextureRenderer(this.stage, canvas, args);
+          var renderer = TextTexture2.renderer(this.stage, canvas, args);
           var p = renderer.draw();
           var texParams = {};
           var sharpCfg = this.stage.getOption("fontSharp");
@@ -7996,7 +7998,7 @@ var __publicField = (obj, key, value) => {
           nonDefaults["letterSpacing"] = this.letterSpacing;
         if (this.textIndent !== 0)
           nonDefaults["textIndent"] = this.textIndent;
-        if (this.rtl !== 0)
+        if (this.rtl)
           nonDefaults["rtl"] = this.rtl;
         if (this.cutSx)
           nonDefaults["cutSx"] = this.cutSx;
@@ -8060,7 +8062,7 @@ var __publicField = (obj, key, value) => {
     }], [{
       key: "renderer",
       value: function renderer(stage, canvas, settings) {
-        if (this.advancedRenderer) {
+        if (settings.advancedRenderer || TextTexture2.forceAdvancedRenderer) {
           return new TextTextureRendererAdvanced(stage, canvas, settings);
         } else {
           return new TextTextureRenderer(stage, canvas, settings);
@@ -8068,6 +8070,8 @@ var __publicField = (obj, key, value) => {
       }
     }]);
   }(Texture);
+  _defineProperty(TextTexture, "forceAdvancedRenderer", false);
+  _defineProperty(TextTexture, "allowTextTruncation", true);
   var proto = TextTexture.prototype;
   proto._text = "";
   proto._w = 0;
@@ -8102,7 +8106,7 @@ var __publicField = (obj, key, value) => {
   proto._highlightPaddingRight = 0;
   proto._letterSpacing = 0;
   proto._textIndent = 0;
-  proto._rtl = 0;
+  proto._rtl = false;
   proto._cutSx = 0;
   proto._cutEx = 0;
   proto._cutSy = 0;

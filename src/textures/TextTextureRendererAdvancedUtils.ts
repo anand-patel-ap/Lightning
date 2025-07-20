@@ -341,7 +341,8 @@ export function layoutSpans(
           lastIndex = line.words.length - 1;
           word = line.words[lastIndex]!;
           index = lastIndex;
-          removeOppositeEnd = allowTruncation && word.width < suffixWidth * 2;
+          removeOppositeEnd =
+            (allowTruncation && word && word.width < suffixWidth * 2) ?? false;
         }
       }
 
