@@ -91,6 +91,7 @@ export default class TextTextureRenderer {
         console.warn("[Lightning] Can't check font loading for " + fontSetting);
       }
     }
+    return Promise.resolve();
   }
 
   draw() {
