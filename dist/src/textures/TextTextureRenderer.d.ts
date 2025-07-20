@@ -10,7 +10,7 @@ export default class TextTextureRenderer {
     renderInfo: IRenderInfo | undefined;
     constructor(stage: Stage, canvas: HTMLCanvasElement, settings: Required<TextTexture.Settings>);
     setFontProperties(): void;
-    _load(): Promise<void> | undefined;
+    _load(): Promise<void>;
     draw(): void | Promise<void>;
     _calculateRenderInfo(): IRenderInfo;
     _draw(): void;

@@ -58,6 +58,7 @@ export default class TextTextureRenderer {
                 console.warn("[Lightning] Can't check font loading for " + fontSetting);
             }
         }
+        return Promise.resolve();
     }
     draw() {
         // We do not use a promise so that loading is performed syncronous when possible.

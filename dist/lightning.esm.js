@@ -1,5 +1,5 @@
 /*
- * Lightning v2.15.0-rtl.0
+ * Lightning v2.15.0-rtl.1
  *
  * https://github.com/rdkcentral/Lightning
  */
@@ -5190,6 +5190,7 @@ class TextTextureRenderer {
         console.warn("[Lightning] Can't check font loading for " + fontSetting);
       }
     }
+    return Promise.resolve();
   }
   draw() {
     const loadPromise = this._load();
