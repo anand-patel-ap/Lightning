@@ -44,6 +44,16 @@ declare class TextTokenizer {
      * @returns
      */
     static defaultTokenizer(text: string): TextTokenizer.ITextTokenizerSpan[];
+    /**
+     * Advanced tokenizer for RTL text with punctuation separation
+     * @param text
+     * @returns
+     */
+    static advancedRTLTokenizer(text: string): TextTokenizer.ITextTokenizerSpan[];
+    /**
+     * Separate punctuation marks from words for proper RTL handling
+     */
+    static separateRTLPunctuation(word: string): string[];
 }
 export default TextTokenizer;
 //# sourceMappingURL=TextTokenizer.d.ts.map

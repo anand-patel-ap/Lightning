@@ -4971,9 +4971,81 @@ const _TextTokenizer = class _TextTokenizer {
     }
     return [
       {
-        tokens: words
+        tokens: words,
+        rtl: /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(
+          text
+        )
       }
     ];
+  }
+  /**
+   * Advanced tokenizer for RTL text with punctuation separation
+   * @param text
+   * @returns
+   */
+  static advancedRTLTokenizer(text) {
+    const hasRTL = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(
+      text
+    );
+    const words = [];
+    const len = text.length;
+    let startIndex = 0;
+    let i = 0;
+    for (; i < len; i++) {
+      const c = text.charAt(i);
+      if (c === " " || c === "​") {
+        if (i - startIndex > 0) {
+          const word = text.substring(startIndex, i);
+          if (hasRTL) {
+            const separatedTokens = _TextTokenizer.separateRTLPunctuation(word);
+            console.log("anand token", separatedTokens);
+            words.push(...separatedTokens);
+          } else {
+            console.log("anand words", word);
+            words.push(word);
+          }
+        }
+        startIndex = i + 1;
+        if (c === " ") {
+          words.push(" ");
+        }
+      }
+    }
+    if (i - startIndex > 0) {
+      const word = text.substring(startIndex, len);
+      if (hasRTL) {
+        const separatedTokens = _TextTokenizer.separateRTLPunctuation(word);
+        words.push(...separatedTokens);
+      } else {
+        words.push(word);
+      }
+    }
+    return [
+      {
+        tokens: words,
+        rtl: hasRTL
+      }
+    ];
+  }
+  /**
+   * Separate punctuation marks from words for proper RTL handling
+   */
+  static separateRTLPunctuation(word) {
+    const punctuationRegex = /[.,،:;!?؟()"""«»\-]/g;
+    const result = [];
+    let lastIndex = 0;
+    let match;
+    while ((match = punctuationRegex.exec(word)) !== null) {
+      if (match.index > lastIndex) {
+        result.push(word.substring(lastIndex, match.index));
+      }
+      result.push(match[0]);
+      lastIndex = match.index + 1;
+    }
+    if (lastIndex < word.length) {
+      result.push(word.substring(lastIndex));
+    }
+    return result.length > 0 ? result.filter((token) => token.length > 0) : [word];
   }
 };
 // current custom tokenizer
@@ -4999,7 +5071,7 @@ function getFontSetting(fontFace, fontStyle, fontSize, precision, defaultFontFac
   }
   return `${fontStyle} ${fontSize * precision}px ${ffs.join(",")}`;
 }
-function wrapText(context, text, wrapWidth, letterSpacing, textIndent, maxLines, suffix, wordBreak) {
+function wrapText(context, text, wrapWidth, letterSpacing, textIndent, maxLines, suffix, wordBreak, rtl) {
   const tokenize = TextTokenizer$1.getTokenizer();
   const words = tokenize(text)[0].tokens;
   const spaceWidth = measureText(context, " ", letterSpacing);
@@ -5069,7 +5141,10 @@ function wrapText(context, text, wrapWidth, letterSpacing, textIndent, maxLines,
         result = result.substring(0, result.length - 1);
         totalWidth -= spaceWidth;
       }
-      result += suffix;
+      if (rtl)
+        result = suffix + result;
+      else
+        result += suffix;
       totalWidth += suffixWidth;
     }
   }
@@ -5077,7 +5152,31 @@ function wrapText(context, text, wrapWidth, letterSpacing, textIndent, maxLines,
     text: result,
     width: totalWidth
   });
+  if (rtl) {
+    resultLines.forEach((line) => {
+      const fixedText = addRTLPunctuation(line.text);
+      if (fixedText !== line.text) {
+        line.text = fixedText;
+        line.width = measureText(context, fixedText, letterSpacing);
+      }
+    });
+  }
   return resultLines;
+}
+function addRTLPunctuation(text) {
+  const words = text.split(" ");
+  const fixedWords = words.map((word) => {
+    const punctuationRegex = /([.,،:;!?؟()"""«»\-]+)$/;
+    const match = word.match(punctuationRegex);
+    if (match) {
+      const punctuation = match[0];
+      const wordWithoutPunctuation = word.replace(punctuationRegex, "");
+      return punctuation + wordWithoutPunctuation;
+    }
+    return word;
+  });
+  console.log("anand fixed word", fixedWords.join(" "));
+  return fixedWords.join(" ");
 }
 function getSuffix(maxLinesSuffix, textOverflow, wordWrap) {
   if (wordWrap) {
@@ -5485,7 +5584,8 @@ class TextTextureRenderer {
         i === 0 ? this._settings.textIndent : 0,
         nowrap ? 1 : maxLines,
         suffix,
-        wordBreak
+        wordBreak,
+        this._settings.rtl
       );
       if (maxLines === 0) {
         renderLines.push(...tempLines);
@@ -5656,7 +5756,7 @@ function layoutSpans(ctx, spans, lineStyle, wrapWidth, textIndent, maxLines, suf
       x += width;
       if (x > wrapWidth) {
         if (lineN === maxLines) {
-          words.push({ text, width, style, rtl });
+          words.push({ text, width, style, rtl: primaryRtl });
           overflow = true;
           endReached = true;
           break;
@@ -5675,7 +5775,7 @@ function layoutSpans(ctx, spans, lineStyle, wrapWidth, textIndent, maxLines, suf
                 text: k.text,
                 width: k.width,
                 style,
-                rtl
+                rtl: primaryRtl
               });
               appendWords();
               newLine();
@@ -5683,7 +5783,7 @@ function layoutSpans(ctx, spans, lineStyle, wrapWidth, textIndent, maxLines, suf
             text = last.text;
             x = width = last.width;
           }
-          words.push({ text, width, style, rtl });
+          words.push({ text, width, style, rtl: primaryRtl });
           continue;
         }
         appendWords();
@@ -5693,7 +5793,7 @@ function layoutSpans(ctx, spans, lineStyle, wrapWidth, textIndent, maxLines, suf
         }
         x = width;
       }
-      words.push({ text, width, style, rtl });
+      words.push({ text, width, style, rtl: primaryRtl });
     }
     appendWords();
     if (endReached)
@@ -5772,12 +5872,13 @@ function layoutSpans(ctx, spans, lineStyle, wrapWidth, textIndent, maxLines, suf
       text: suffix,
       width: suffixWidth,
       style: baseStyle,
-      rtl: false
+      rtl: primaryRtl
     });
     line.width += suffixWidth;
   }
   if (primaryRtl) {
     for (const line2 of lines) {
+      line2.rtl = true;
       line2.words.reverse();
     }
   }
@@ -5831,7 +5932,13 @@ function trimRtlWordStart(text) {
 }
 class TextTextureRendererAdvanced extends TextTextureRenderer {
   wrapText(text, wordWrapWidth) {
+    if (!this._settings.wordWrap && !this._settings.textOverflow) {
+      return super.wrapText(text, wordWrapWidth);
+    }
     const styled = this._settings.advancedRenderer;
+    const hasRTL = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(
+      text
+    );
     const baseFont = getFontSetting(
       this._settings.fontFace,
       styled ? "" : this._settings.fontStyle,
@@ -5856,20 +5963,27 @@ class TextTextureRendererAdvanced extends TextTextureRenderer {
       tags = [];
     }
     const lineStyle = createLineStyle(tags, baseFont, this._settings.textColor);
-    const tokenize = TextTokenizer$1.getTokenizer();
+    const tokenize = hasRTL ? TextTokenizer$1.advancedRTLTokenizer : TextTokenizer$1.getTokenizer();
     const sourceLines = text.split(/[\r\n]/g);
     const wrappedLines = [];
     let remainingLines = this._settings.maxLines;
     for (let i = 0; i < sourceLines.length; i++) {
       const line = sourceLines[i];
-      const spans = tokenize(line);
+      let spans = tokenize(line);
+      if (this._settings.rtl || hasRTL) {
+        spans = spans.map((span) => ({
+          ...span,
+          rtl: true
+          // Force RTL for all spans
+        }));
+      }
       const lines = layoutSpans(
         this._context,
         spans,
         lineStyle,
         wordWrapWidth,
         i === 0 ? this._settings.textIndent : 0,
-        nowrap ? 1 : remainingLines,
+        nowrap ? 0 : remainingLines,
         suffix,
         wordBreak,
         letterSpacing,

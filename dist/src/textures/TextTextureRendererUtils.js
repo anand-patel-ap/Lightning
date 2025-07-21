@@ -52,7 +52,7 @@ export function getFontSetting(fontFace, fontStyle, fontSize, precision, default
 /**
  * Wrap a single line of text
  */
-export function wrapText(context, text, wrapWidth, letterSpacing, textIndent, maxLines, suffix, wordBreak) {
+export function wrapText(context, text, wrapWidth, letterSpacing, textIndent, maxLines, suffix, wordBreak, rtl) {
     // Greedy wrapping algorithm that will wrap words as the line grows longer.
     // than its horizontal bounds.
     const tokenize = TextTokenizer.getTokenizer();
@@ -135,7 +135,10 @@ export function wrapText(context, text, wrapWidth, letterSpacing, textIndent, ma
                 result = result.substring(0, result.length - 1);
                 totalWidth -= spaceWidth;
             }
-            result += suffix;
+            if (rtl)
+                result = suffix + result;
+            else
+                result += suffix;
             totalWidth += suffixWidth;
         }
     }
@@ -143,7 +146,34 @@ export function wrapText(context, text, wrapWidth, letterSpacing, textIndent, ma
         text: result,
         width: totalWidth,
     });
+    if (rtl) {
+        resultLines.forEach((line) => {
+            const fixedText = addRTLPunctuation(line.text);
+            if (fixedText !== line.text) {
+                line.text = fixedText;
+                line.width = measureText(context, fixedText, letterSpacing);
+            }
+        });
+    }
     return resultLines;
+}
+/**
+ * add punctuation positioning for RTL text
+ */
+export function addRTLPunctuation(text) {
+    const words = text.split(" ");
+    const fixedWords = words.map((word) => {
+        const punctuationRegex = /([.,،:;!?؟()"""«»\-]+)$/;
+        const match = word.match(punctuationRegex);
+        if (match) {
+            const punctuation = match[0];
+            const wordWithoutPunctuation = word.replace(punctuationRegex, "");
+            return punctuation + wordWithoutPunctuation;
+        }
+        return word;
+    });
+    console.log("anand fixed word", fixedWords.join(" "));
+    return fixedWords.join(" ");
 }
 /**
  * Determine how to handle overflow, and what suffix (e.g. ellipsis) to render

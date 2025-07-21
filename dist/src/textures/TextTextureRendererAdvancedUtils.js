@@ -117,6 +117,7 @@ export function layoutSpans(ctx, spans, lineStyle, wrapWidth, textIndent, maxLin
     const spaceWidth = measureText(ctx, " ", letterSpacing);
     const suffixWidth = measureText(ctx, suffix, letterSpacing);
     // layout state
+    // layout state
     let rtl = Boolean(spans[0]?.rtl);
     const primaryRtl = rtl;
     let line = {
@@ -191,7 +192,7 @@ export function layoutSpans(ctx, spans, lineStyle, wrapWidth, textIndent, maxLin
             if (x > wrapWidth) {
                 // last word of last line - ellipsis will be applied later
                 if (lineN === maxLines) {
-                    words.push({ text, width, style, rtl });
+                    words.push({ text, width, style, rtl: primaryRtl });
                     overflow = true;
                     endReached = true;
                     break;
@@ -213,7 +214,7 @@ export function layoutSpans(ctx, spans, lineStyle, wrapWidth, textIndent, maxLin
                                 text: k.text,
                                 width: k.width,
                                 style,
-                                rtl,
+                                rtl: primaryRtl,
                             });
                             appendWords();
                             newLine();
@@ -222,7 +223,7 @@ export function layoutSpans(ctx, spans, lineStyle, wrapWidth, textIndent, maxLin
                         x = width = last.width;
                     }
                     // add remaining/full word
-                    words.push({ text, width, style, rtl });
+                    words.push({ text, width, style, rtl: primaryRtl });
                     continue;
                 }
                 // finalize line
@@ -235,7 +236,7 @@ export function layoutSpans(ctx, spans, lineStyle, wrapWidth, textIndent, maxLin
                 // we will insert the word to the new line
                 x = width;
             }
-            words.push({ text, width, style, rtl });
+            words.push({ text, width, style, rtl: primaryRtl });
         }
         // append and continue?
         appendWords();
@@ -329,16 +330,26 @@ export function layoutSpans(ctx, spans, lineStyle, wrapWidth, textIndent, maxLin
             text: suffix,
             width: suffixWidth,
             style: baseStyle,
-            rtl: false,
+            rtl: primaryRtl,
         });
         line.width += suffixWidth;
     }
     // reverse words of RTL text because we render left to right
     if (primaryRtl) {
         for (const line of lines) {
+            line.rtl = true; // ✅ Set line RTL property correctly
             line.words.reverse();
         }
+        // For RTL with ellipsis, the ellipsis should now be at the beginning (left side visually)
+        // after reversal, which is what we want - no additional manipulation needed
     }
+    // // For RTL with ellipsis, move ellipsis to the beginning after reversal
+    // if (overflow && suffix) {
+    //   const lastLine = lines.pop();
+    //   const ellipsis = lastLine?.words?.pop();
+    //   lastLine?.words.unshift(ellipsis as WordLayout);
+    //   lines.push(lastLine as LineLayout);
+    // }
     return lines;
 }
 const rePunctuationStart = /^[.,،:;!?؟()"“”«»-]+/;

@@ -24,8 +24,13 @@ import TextTokenizer from "./TextTokenizer.js";
 import TextTexture from "./TextTexture.mjs";
 export default class TextTextureRendererAdvanced extends TextTextureRenderer {
     wrapText(text, wordWrapWidth) {
+        // If wordWrap is false and no textOverflow, fall back to base renderer
+        if (!this._settings.wordWrap && !this._settings.textOverflow) {
+            return super.wrapText(text, wordWrapWidth);
+        }
         const styled = this._settings.advancedRenderer;
-        // styled renderer' base font should not include styling
+        // Check if text contains RTL characters
+        const hasRTL = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
         const baseFont = getFontSetting(this._settings.fontFace, styled ? "" : this._settings.fontStyle, this._settings.fontSize, this._stage.getRenderPrecision(), this._stage.getOption("defaultFontFace"));
         const { suffix, nowrap } = getSuffix(this._settings.maxLinesSuffix, this._settings.textOverflow, this._settings.wordWrap);
         const wordBreak = this._settings.wordBreak;
@@ -41,14 +46,24 @@ export default class TextTextureRendererAdvanced extends TextTextureRenderer {
             tags = [];
         }
         const lineStyle = createLineStyle(tags, baseFont, this._settings.textColor);
-        const tokenize = TextTokenizer.getTokenizer();
+        // Use advanced tokenizer for RTL punctuation handling
+        const tokenize = hasRTL
+            ? TextTokenizer.advancedRTLTokenizer
+            : TextTokenizer.getTokenizer();
         const sourceLines = text.split(/[\r\n]/g);
         const wrappedLines = [];
         let remainingLines = this._settings.maxLines;
         for (let i = 0; i < sourceLines.length; i++) {
             const line = sourceLines[i];
-            const spans = tokenize(line);
-            const lines = layoutSpans(this._context, spans, lineStyle, wordWrapWidth, i === 0 ? this._settings.textIndent : 0, nowrap ? 1 : remainingLines, suffix, wordBreak, letterSpacing, allowTextTruncation);
+            let spans = tokenize(line);
+            // Override RTL detection if settings specify RTL
+            if (this._settings.rtl || hasRTL) {
+                spans = spans.map((span) => ({
+                    ...span,
+                    rtl: true, // Force RTL for all spans
+                }));
+            }
+            const lines = layoutSpans(this._context, spans, lineStyle, wordWrapWidth, i === 0 ? this._settings.textIndent : 0, nowrap ? 0 : remainingLines, suffix, wordBreak, letterSpacing, allowTextTruncation);
             wrappedLines.push(...lines);
             if (remainingLines > 0) {
                 remainingLines -= lines.length;

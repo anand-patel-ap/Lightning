@@ -360,7 +360,7 @@ export default class TextTextureRenderer {
         const wordBreak = this._settings.wordBreak;
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
-            const tempLines = wrapText(this._context, line, wordWrapWidth, this._settings.letterSpacing, i === 0 ? this._settings.textIndent : 0, nowrap ? 1 : maxLines, suffix, wordBreak);
+            const tempLines = wrapText(this._context, line, wordWrapWidth, this._settings.letterSpacing, i === 0 ? this._settings.textIndent : 0, nowrap ? 1 : maxLines, suffix, wordBreak, this._settings.rtl);
             if (maxLines === 0) {
                 // add all
                 renderLines.push(...tempLines);

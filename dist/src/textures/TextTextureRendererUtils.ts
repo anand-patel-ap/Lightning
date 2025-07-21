@@ -76,7 +76,8 @@ export function wrapText(
   textIndent: number,
   maxLines: number,
   suffix: string,
-  wordBreak: boolean
+  wordBreak: boolean,
+  rtl: boolean
 ): ILineInfo[] {
   // Greedy wrapping algorithm that will wrap words as the line grows longer.
   // than its horizontal bounds.
@@ -144,7 +145,7 @@ export function wrapText(
       result += word;
     }
   }
-  
+
   // prevent exceeding maxLines
   if (maxLines > 0 && resultLines.length >= maxLines) {
     resultLines.length = maxLines;
@@ -166,7 +167,8 @@ export function wrapText(
         result = result.substring(0, result.length - 1);
         totalWidth -= spaceWidth;
       }
-      result += suffix;
+      if (rtl) result = suffix + result;
+      else result += suffix;
       totalWidth += suffixWidth;
     }
   }
@@ -176,7 +178,39 @@ export function wrapText(
     width: totalWidth,
   });
 
+  if (rtl) {
+    resultLines.forEach((line) => {
+      const fixedText = addRTLPunctuation(line.text);
+      if (fixedText !== line.text) {
+        line.text = fixedText;
+        line.width = measureText(context, fixedText, letterSpacing);
+      }
+    });
+  }
+
   return resultLines;
+}
+
+/**
+ * add punctuation positioning for RTL text
+ */
+export function addRTLPunctuation(text: string): string {
+  const words = text.split(" ");
+  const fixedWords = words.map((word) => {
+    const punctuationRegex = /([.,،:;!?؟()"""«»\-]+)$/;
+    const match = word.match(punctuationRegex);
+
+    if (match) {
+      const punctuation = match[0];
+      const wordWithoutPunctuation = word.replace(punctuationRegex, "");
+      return punctuation + wordWithoutPunctuation;
+    }
+
+    return word;
+  });
+  console.log("anand fixed word", fixedWords.join(" "));
+
+  return fixedWords.join(" ");
 }
 
 /**

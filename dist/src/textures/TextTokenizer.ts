@@ -30,7 +30,7 @@ namespace TextTokenizer {
 
   /**
    * Signature of text tokenizer function
-   * 
+   *
    * Note: space characters should be their own token.
    */
   export type ITextTokenizerFunction = (text: string) => ITextTokenizerSpan[];
@@ -59,14 +59,20 @@ class TextTokenizer {
    * @param tokenizer
    * @param detectASCII - when 100% ASCII text is tokenized, the default tokenizer should be used
    */
-  static setCustomTokenizer(tokenizer?: TextTokenizer.ITextTokenizerFunction, detectASCII: boolean = false): void {
+  static setCustomTokenizer(
+    tokenizer?: TextTokenizer.ITextTokenizerFunction,
+    detectASCII: boolean = false
+  ): void {
     if (!tokenizer || !detectASCII) {
       this._customTokenizer = tokenizer;
     } else {
-      this._customTokenizer = (text) => TextTokenizer.containsOnlyASCII(text) ? tokenizer(text) : this.defaultTokenizer(text);
+      this._customTokenizer = (text) =>
+        TextTokenizer.containsOnlyASCII(text)
+          ? tokenizer(text)
+          : this.defaultTokenizer(text);
     }
   }
-  
+
   /**
    * Returns true when `text` contains only ASCII characters.
    **/
@@ -75,7 +81,7 @@ class TextTokenizer {
     // The regex will match any character that is not in ASCII
     // - first, matching all characters between space (32) and ~ (127)
     // - second, matching all unicode quotation marks (see https://hexdocs.pm/ex_unicode/Unicode.Category.QuoteMarks.html)
-    return text.charAt(0) <= 'z' && !/[^ -~'-›]/.test(text);
+    return text.charAt(0) <= "z" && !/[^ -~'-›]/.test(text);
   }
 
   /**
@@ -106,8 +112,106 @@ class TextTokenizer {
     return [
       {
         tokens: words,
+        rtl: /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(
+          text
+        ),
       },
     ];
+  }
+
+  /**
+   * Advanced tokenizer for RTL text with punctuation separation
+   * @param text
+   * @returns
+   */
+  static advancedRTLTokenizer(
+    text: string
+  ): TextTokenizer.ITextTokenizerSpan[] {
+    // Detect if text contains RTL characters
+    const hasRTL =
+      /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(
+        text
+      );
+
+    const words: string[] = [];
+    const len = text.length;
+    let startIndex = 0;
+    let i = 0;
+
+    for (; i < len; i++) {
+      const c = text.charAt(i);
+      if (c === " " || c === "\u200B") {
+        if (i - startIndex > 0) {
+          const word = text.substring(startIndex, i);
+
+          // For RTL text, separate punctuation marks
+          if (hasRTL) {
+            const separatedTokens = TextTokenizer.separateRTLPunctuation(word);
+            console.log("anand token", separatedTokens);
+
+            words.push(...separatedTokens);
+          } else {
+            console.log("anand words", word);
+
+            words.push(word);
+          }
+        }
+        startIndex = i + 1;
+        if (c === " ") {
+          words.push(" ");
+        }
+      }
+    }
+
+    if (i - startIndex > 0) {
+      const word = text.substring(startIndex, len);
+
+      // Handle final word with punctuation
+      if (hasRTL) {
+        const separatedTokens = TextTokenizer.separateRTLPunctuation(word);
+        words.push(...separatedTokens);
+      } else {
+        words.push(word);
+      }
+    }
+
+    return [
+      {
+        tokens: words,
+        rtl: hasRTL,
+      },
+    ];
+  }
+
+  /**
+   * Separate punctuation marks from words for proper RTL handling
+   */
+  static separateRTLPunctuation(word: string): string[] {
+    const punctuationRegex = /[.,،:;!?؟()"""«»\-]/g;
+    const result: string[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = punctuationRegex.exec(word)) !== null) {
+      // Add text before punctuation
+      if (match.index > lastIndex) {
+        result.push(word.substring(lastIndex, match.index));
+      }
+
+      // Add the punctuation mark as separate token
+      result.push(match[0]);
+      lastIndex = match.index + 1;
+    }
+
+    // Add remaining text after last punctuation
+    if (lastIndex < word.length) {
+      result.push(word.substring(lastIndex));
+    }
+
+    // If no punctuation found, return the original word
+    return result.length > 0
+      ? result.filter((token) => token.length > 0)
+      : [word];
   }
 }
 
