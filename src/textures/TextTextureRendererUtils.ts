@@ -76,7 +76,8 @@ export function wrapText(
   textIndent: number,
   maxLines: number,
   suffix: string,
-  wordBreak: boolean
+  wordBreak: boolean,
+  rtl: boolean
 ): ILineInfo[] {
   // Greedy wrapping algorithm that will wrap words as the line grows longer.
   // than its horizontal bounds.
@@ -144,7 +145,7 @@ export function wrapText(
       result += word;
     }
   }
-  
+
   // prevent exceeding maxLines
   if (maxLines > 0 && resultLines.length >= maxLines) {
     resultLines.length = maxLines;
@@ -166,7 +167,9 @@ export function wrapText(
         result = result.substring(0, result.length - 1);
         totalWidth -= spaceWidth;
       }
-      result += suffix;
+      console.log("anand suffix", suffix, result);
+      if (rtl) result = suffix + result;
+      else result += suffix;
       totalWidth += suffixWidth;
     }
   }
@@ -175,6 +178,7 @@ export function wrapText(
     text: result,
     width: totalWidth,
   });
+  console.log("anand resulted lines", resultLines);
 
   return resultLines;
 }
