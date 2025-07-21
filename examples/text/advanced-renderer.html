@@ -28,28 +28,43 @@
     <script type="module">
         //attachInspector(lng)
         import lng from '../../dist/src/lightning.mjs';
+        const ARABIC_TEXT = "مرحباً بكم في تطبيقنا الجديد. هذا النص مخصص لاختبار التخطيط من اليمين إلى اليسار والتأكد من أن النظام يعمل بشكل صحيح مع النصوص العربية.";
+        const ARABIC_TEXT2 = "ذهبت إلى المكتبة، وقرأت كتابًا جديدًا."
         const TEXT = "This text is normal.\nThis text is <b>bold</b>.\nThis text is <i>italic</i>.\nThis text is <color=0xffcc2222>red</color>.\nThis text is brokennnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn up.\n"
 
         window.onload = function() {
-            class BasicUsageExample extends lng.Application {
-                static _template() {
-                    return {
-                        text: {
-                            w: 500,
-                            wordBreak: true,
-                            advancedRenderer: true,
-                            text: TEXT
-                        }
-                    }
+    class BasicUsageExample extends lng.Application {
+        static _template() {
+            return {
+                text: {
+                    w: 400,
+                    wordBreak: true,
+                    // maxLines: 3,
+                    advancedRenderer: true,
+                    text: ARABIC_TEXT,
+                    textColor: 0xFF000000,
+                    rtl: true,  // Enable RTL layout
+                    textAlign: "left",
+                    wordWrap: true
                 }
             }
-
-            const options = {stage: {w: 900, h: 900, clearColor: 0xFF000000, canvas2d: false, useImageWorker: false}, debug: true}
-
-            const app = new BasicUsageExample(options);
-
-            document.body.appendChild(app.stage.getCanvas());
         }
+    }
+
+    const options = {
+        stage: {
+            w: 900, 
+            h: 900, 
+            clearColor: 0xFF808080,
+            canvas2d: false, 
+            useImageWorker: false
+        }, 
+        debug: true
+    }
+
+    const app = new BasicUsageExample(options);
+    document.body.appendChild(app.stage.getCanvas());
+}
     </script>
 </body>
 </html>
