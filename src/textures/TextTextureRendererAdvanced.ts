@@ -29,10 +29,7 @@ import type {
   ILinesInfo,
   ILineWordStyle,
 } from "./TextTextureRendererTypes.js";
-import {
-  getFontSetting,
-  getSuffix,
-} from "./TextTextureRendererUtils.js";
+import { getFontSetting, getSuffix } from "./TextTextureRendererUtils.js";
 import StageUtils from "../tree/StageUtils.mjs";
 import TextTokenizer from "./TextTokenizer.js";
 import TextTexture from "./TextTexture.mjs";
@@ -46,11 +43,9 @@ export default class TextTextureRendererAdvanced extends TextTextureRenderer {
 
     const styled = this._settings.advancedRenderer;
 
-    // Check if text contains RTL characters
-    const hasRTL =
-      /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(
-        text
-      );
+    // Check if text contains mixed directional content
+    const hasMixed = TextTokenizer.isMixedDirectional(text);
+    const hasRTL = TextTokenizer.containsRTL(text);
 
     const baseFont = getFontSetting(
       this._settings.fontFace,
@@ -80,10 +75,11 @@ export default class TextTextureRendererAdvanced extends TextTextureRenderer {
 
     const lineStyle = createLineStyle(tags, baseFont, this._settings.textColor);
 
-    // Use advanced tokenizer for RTL punctuation handling
-    const tokenize = hasRTL
-      ? TextTokenizer.advancedRTLTokenizer
-      : TextTokenizer.getTokenizer();
+    // Use bidi-aware tokenizer for mixed content or RTL
+    const tokenize =
+      hasMixed || hasRTL
+        ? (text: string) => TextTokenizer.bidiAwareTokenizer(text)
+        : TextTokenizer.getTokenizer();
 
     const sourceLines = text.split(/[\r\n]/g);
     const wrappedLines: LineLayout[] = [];

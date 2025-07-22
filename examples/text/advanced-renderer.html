@@ -21,17 +21,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
+<script type="importmap">
+    {
+      "imports": {
+        "bidi-js": "https://cdn.jsdelivr.net/npm/bidi-js@1.0.1/dist/bidi.min.mjs"
+      }
+    }
+    </script>
 
     <script src="../../devtools/lightning-inspect.js"></script>
 </head>
 <body>
     <script type="module">
         //attachInspector(lng)
-        import lng from '../../dist/src/lightning.mjs';
+       import lng from '../../dist/src/lightning.mjs';
+        // Import both files with correct paths
+        import { getBidiTokenizer } from '../../dist/src/textures/bidiTokenizer.js';
+        import TextTokenizer from '../../dist/src/textures/TextTokenizer.js';
+        // In your HTML file, add debugging:
+        console.log('Setting bidi tokenizer getter...');
+        console.log('getBidiTokenizer function:', getBidiTokenizer);
+        console.log('getBidiTokenizer result:', getBidiTokenizer());
+
+       TextTokenizer.setBidiTokenizerGetter(() => getBidiTokenizer());
+
+        // Verify it was set:
+        console.log('Bidi tokenizer getter set:', TextTokenizer._getBidiTokenizer);
+
+        
+        // Initialize the bidi tokenizer - THIS IS IMPORTANT!
+        // TextTokenizer.setBidiTokenizerGetter(getBidiTokenizer());
+        
         const ARABIC_TEXT = "مرحباً بكم في تطبيقنا الجديد. هذا النص مخصص لاختبار التخطيط من اليمين إلى اليسار والتأكد من أن النظام يعمل بشكل صحيح مع النصوص العربية.";
         const ARABIC_TEXT2 = "ذهبت إلى المكتبة، وقرأت كتابًا جديدًا."
         const TEXT = "This text is normal.\nThis text is <b>bold</b>.\nThis text is <i>italic</i>.\nThis text is <color=0xffcc2222>red</color>.\nThis text is brokennnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn up.\n"
-
+        const MIX = "قم بزيارة www.awaan.com/login";
         window.onload = function() {
     class BasicUsageExample extends lng.Application {
         static _template() {

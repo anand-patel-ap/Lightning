@@ -405,13 +405,6 @@ export function layoutSpans(
     }
   }
 
-  // // For RTL with ellipsis, move ellipsis to the beginning after reversal
-  // if (overflow && suffix) {
-  //   const lastLine = lines.pop();
-  //   const ellipsis = lastLine?.words?.pop();
-  //   lastLine?.words.unshift(ellipsis as WordLayout);
-  //   lines.push(lastLine as LineLayout);
-  // }
   return lines;
 }
 
