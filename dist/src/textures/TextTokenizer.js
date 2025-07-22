@@ -25,12 +25,47 @@
 class TextTokenizer {
     // current custom tokenizer
     static _customTokenizer;
+    // bidi tokenizer getter - will be set by external code
+    static _getBidiTokenizer;
+    // Flag to track if we've tried to load the bidi tokenizer
+    static _bidiLoadAttempted = false;
+    /**
+     * Set the bidi tokenizer getter function
+     * This should be called during app initialization
+     */
+    static setBidiTokenizerGetter(getter) {
+        this._getBidiTokenizer = getter;
+    }
+    /**
+     * Try to load the bidi tokenizer internally
+     */
+    static tryLoadBidiTokenizer() {
+        if (this._bidiLoadAttempted || this._getBidiTokenizer)
+            return;
+        this._bidiLoadAttempted = true;
+        try {
+            // Try to import the bidi tokenizer
+            // @ts-ignore
+            const { getBidiTokenizer } = require("./bidiTokenizer.js");
+            this._getBidiTokenizer = getBidiTokenizer;
+        }
+        catch (e) {
+            // If require doesn't work, try dynamic import
+            import("./bidiTokenizer.js")
+                .then((module) => {
+                this._getBidiTokenizer = module.getBidiTokenizer;
+            })
+                .catch((err) => {
+                console.warn("Could not load bidi tokenizer:", err);
+            });
+        }
+    }
     /**
      * Get the active tokenizer function
      * @returns
      */
     static getTokenizer() {
-        return this._customTokenizer || this.defaultTokenizer;
+        return this._customTokenizer || ((text) => this.bidiAwareTokenizer(text));
     }
     /**
      * Inject or clears the custom text tokenizer.
@@ -43,8 +78,8 @@ class TextTokenizer {
         }
         else {
             this._customTokenizer = (text) => TextTokenizer.containsOnlyASCII(text)
-                ? tokenizer(text)
-                : this.defaultTokenizer(text);
+                ? this.defaultTokenizer(text)
+                : tokenizer(text);
         }
     }
     /**
@@ -54,8 +89,22 @@ class TextTokenizer {
         // It checks the first char to fail fast for most non-English strings
         // The regex will match any character that is not in ASCII
         // - first, matching all characters between space (32) and ~ (127)
-        // - second, matching all unicode quotation marks (see https://hexdocs.pm/ex_unicode/Unicode.Category.QuoteMarks.html)
+        // - second, matching all unicode quotation marks
         return text.charAt(0) <= "z" && !/[^ -~'-›]/.test(text);
+    }
+    /**
+     * Check if text contains RTL characters
+     */
+    static containsRTL(text) {
+        return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0590-\u05FF]/.test(text);
+    }
+    /**
+     * Check if text contains mixed directional content
+     */
+    static isMixedDirectional(text) {
+        const hasRTL = this.containsRTL(text);
+        const hasLTR = /[a-zA-Z0-9]/.test(text);
+        return hasRTL && hasLTR;
     }
     /**
      * Default tokenizer implementation, suitable for most languages
@@ -85,9 +134,42 @@ class TextTokenizer {
         return [
             {
                 tokens: words,
-                rtl: /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text),
+                rtl: this.containsRTL(text),
             },
         ];
+    }
+    /**
+     * Bidi-aware tokenizer that properly handles mixed directional text
+     * @param text
+     * @returns
+     */
+    static bidiAwareTokenizer(text) {
+        // For pure ASCII text, use the simple tokenizer
+        if (this.containsOnlyASCII(text)) {
+            return this.defaultTokenizer(text);
+        }
+        // For text without RTL characters, use default tokenizer
+        if (!this.containsRTL(text)) {
+            return this.defaultTokenizer(text);
+        }
+        // Check if it's mixed directional content
+        const isMixed = this.isMixedDirectional(text);
+        if (isMixed && this._getBidiTokenizer) {
+            // For mixed content, use bidi tokenizer
+            const bidiTokenizer = this._getBidiTokenizer();
+            // Add this null check:
+            if (typeof bidiTokenizer === "function") {
+                return bidiTokenizer(text);
+            }
+            else {
+                console.warn("Bidi tokenizer is not properly initialized, falling back to advanced RTL tokenizer");
+                return this.advancedRTLTokenizer(text);
+            }
+        }
+        else {
+            // For pure RTL, use the existing advancedRTLTokenizer
+            return this.advancedRTLTokenizer(text);
+        }
     }
     /**
      * Advanced tokenizer for RTL text with punctuation separation
@@ -95,7 +177,12 @@ class TextTokenizer {
      * @returns
      */
     static advancedRTLTokenizer(text) {
-        // Detect if text contains RTL characters
+        // Check if it's mixed content - if so, use bidi tokenizer
+        if (this.isMixedDirectional(text) && this._getBidiTokenizer) {
+            const bidiTokenizer = this._getBidiTokenizer();
+            return bidiTokenizer(text);
+        }
+        // For pure RTL text, use the original logic
         const hasRTL = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
         const words = [];
         const len = text.length;
@@ -109,11 +196,9 @@ class TextTokenizer {
                     // For RTL text, separate punctuation marks
                     if (hasRTL) {
                         const separatedTokens = TextTokenizer.separateRTLPunctuation(word);
-                        console.log("anand token", separatedTokens);
                         words.push(...separatedTokens);
                     }
                     else {
-                        console.log("anand words", word);
                         words.push(word);
                     }
                 }

@@ -18,7 +18,7 @@
  */
 import { createLineStyle, extractTags, layoutSpans, } from "./TextTextureRendererAdvancedUtils.js";
 import TextTextureRenderer from "./TextTextureRenderer.js";
-import { getFontSetting, getSuffix, } from "./TextTextureRendererUtils.js";
+import { getFontSetting, getSuffix } from "./TextTextureRendererUtils.js";
 import StageUtils from "../tree/StageUtils.mjs";
 import TextTokenizer from "./TextTokenizer.js";
 import TextTexture from "./TextTexture.mjs";
@@ -29,8 +29,9 @@ export default class TextTextureRendererAdvanced extends TextTextureRenderer {
             return super.wrapText(text, wordWrapWidth);
         }
         const styled = this._settings.advancedRenderer;
-        // Check if text contains RTL characters
-        const hasRTL = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
+        // Check if text contains mixed directional content
+        const hasMixed = TextTokenizer.isMixedDirectional(text);
+        const hasRTL = TextTokenizer.containsRTL(text);
         const baseFont = getFontSetting(this._settings.fontFace, styled ? "" : this._settings.fontStyle, this._settings.fontSize, this._stage.getRenderPrecision(), this._stage.getOption("defaultFontFace"));
         const { suffix, nowrap } = getSuffix(this._settings.maxLinesSuffix, this._settings.textOverflow, this._settings.wordWrap);
         const wordBreak = this._settings.wordBreak;
@@ -46,9 +47,9 @@ export default class TextTextureRendererAdvanced extends TextTextureRenderer {
             tags = [];
         }
         const lineStyle = createLineStyle(tags, baseFont, this._settings.textColor);
-        // Use advanced tokenizer for RTL punctuation handling
-        const tokenize = hasRTL
-            ? TextTokenizer.advancedRTLTokenizer
+        // Use bidi-aware tokenizer for mixed content or RTL
+        const tokenize = hasMixed || hasRTL
+            ? (text) => TextTokenizer.bidiAwareTokenizer(text)
             : TextTokenizer.getTokenizer();
         const sourceLines = text.split(/[\r\n]/g);
         const wrappedLines = [];
@@ -56,13 +57,6 @@ export default class TextTextureRendererAdvanced extends TextTextureRenderer {
         for (let i = 0; i < sourceLines.length; i++) {
             const line = sourceLines[i];
             let spans = tokenize(line);
-            // Override RTL detection if settings specify RTL
-            if (this._settings.rtl || hasRTL) {
-                spans = spans.map((span) => ({
-                    ...span,
-                    rtl: true, // Force RTL for all spans
-                }));
-            }
             const lines = layoutSpans(this._context, spans, lineStyle, wordWrapWidth, i === 0 ? this._settings.textIndent : 0, nowrap ? 0 : remainingLines, suffix, wordBreak, letterSpacing, allowTextTruncation);
             wrappedLines.push(...lines);
             if (remainingLines > 0) {

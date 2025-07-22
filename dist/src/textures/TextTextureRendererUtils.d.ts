@@ -16,6 +16,7 @@ export declare function getFontSetting(fontFace: string | (string | null)[] | nu
 export declare function wrapText(context: CanvasRenderingContext2D, text: string, wrapWidth: number, letterSpacing: number, textIndent: number, maxLines: number, suffix: string, wordBreak: boolean, rtl: boolean): ILineInfo[];
 /**
  * add punctuation positioning for RTL text
+ * Note: This is now handled by the bidi tokenizer
  */
 export declare function addRTLPunctuation(text: string): string;
 /**

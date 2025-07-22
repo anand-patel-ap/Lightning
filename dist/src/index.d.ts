@@ -22,6 +22,7 @@ import HtmlTexture from "./textures/HtmlTexture.mjs";
 import StaticTexture from "./textures/StaticTexture.mjs";
 import StaticCanvasTexture from "./textures/StaticCanvasTexture.mjs";
 import SourceTexture from "./textures/SourceTexture.mjs";
+import { getBidiTokenizer } from "./textures/bidiTokenizer.js";
 import ListComponent from "./components/ListComponent.mjs";
 import FastBlurComponent from "./components/FastBlurComponent.mjs";
 import BloomComponent from "./components/BloomComponent.mjs";
@@ -57,6 +58,6 @@ import Stage from "./tree/Stage.mjs";
 import WebPlatform from "./platforms/browser/WebPlatform.mjs";
 import lng from "./lightning.mjs";
 export default lng;
-export { Application, Component, Base, Utils, StageUtils, Element, Tools, Stage, ElementCore, ElementTexturizer, Texture, EventEmitter, WebGLGrayscaleShader, BoxBlurShader, DitheringShader, CircularPushShader, InversionShader, LinearBlurShader, OutlineShader, PixelateShader, RadialFilterShader, RoundedRectangleShader, SpinnerShader2, FadeOutShader, HoleShader, VignetteShader, SpinnerShader, RadialGradientShader, Light3dShader, PerspectiveShader, MagnifierShader, WebGLShader, WebGLDefaultShader, C2dShader, C2dDefaultShader, C2dGrayscaleShader, C2dBlurShader, RectangleTexture, NoiseTexture, TextTexture, TextTextureRenderer, TextTextureRendererAdvanced, TextTokenizer, ImageTexture, HtmlTexture, StaticTexture, StaticCanvasTexture, SourceTexture, FastBlurComponent, BloomComponent, SmoothScaleComponent, BorderComponent, ListComponent, ObjMerger, ObjectListProxy, ObjectListWrapper, WebPlatform, };
+export { Application, Component, Base, Utils, StageUtils, Element, Tools, Stage, ElementCore, ElementTexturizer, Texture, EventEmitter, WebGLGrayscaleShader, BoxBlurShader, DitheringShader, CircularPushShader, InversionShader, LinearBlurShader, OutlineShader, PixelateShader, RadialFilterShader, RoundedRectangleShader, SpinnerShader2, FadeOutShader, HoleShader, VignetteShader, SpinnerShader, RadialGradientShader, Light3dShader, PerspectiveShader, MagnifierShader, WebGLShader, WebGLDefaultShader, C2dShader, C2dDefaultShader, C2dGrayscaleShader, C2dBlurShader, RectangleTexture, NoiseTexture, TextTexture, TextTextureRenderer, TextTextureRendererAdvanced, TextTokenizer, ImageTexture, HtmlTexture, StaticTexture, StaticCanvasTexture, SourceTexture, FastBlurComponent, BloomComponent, SmoothScaleComponent, BorderComponent, ListComponent, ObjMerger, ObjectListProxy, ObjectListWrapper, WebPlatform, getBidiTokenizer, };
 export type * from './types/lng.types.namespace.mjs';
 //# sourceMappingURL=index.d.ts.map

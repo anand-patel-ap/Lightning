@@ -1,5 +1,5 @@
 /*
- * Lightning v2.15.0-rtl.1
+ * Lightning v2.15.0-rtl.2
  *
  * https://github.com/rdkcentral/Lightning
  */
@@ -4920,11 +4920,36 @@ class ImageTexture extends Texture {
 }
 const _TextTokenizer = class _TextTokenizer {
   /**
+   * Set the bidi tokenizer getter function
+   * This should be called during app initialization
+   */
+  static setBidiTokenizerGetter(getter) {
+    this._getBidiTokenizer = getter;
+  }
+  /**
+   * Try to load the bidi tokenizer internally
+   */
+  static tryLoadBidiTokenizer() {
+    if (this._bidiLoadAttempted || this._getBidiTokenizer)
+      return;
+    this._bidiLoadAttempted = true;
+    try {
+      const { getBidiTokenizer } = require("./bidiTokenizer.js");
+      this._getBidiTokenizer = getBidiTokenizer;
+    } catch (e) {
+      import("./bidiTokenizer-3e68dd65.js").then((module) => {
+        this._getBidiTokenizer = module.getBidiTokenizer;
+      }).catch((err) => {
+        console.warn("Could not load bidi tokenizer:", err);
+      });
+    }
+  }
+  /**
    * Get the active tokenizer function
    * @returns
    */
   static getTokenizer() {
-    return this._customTokenizer || this.defaultTokenizer;
+    return this._customTokenizer || ((text) => this.bidiAwareTokenizer(text));
   }
   /**
    * Inject or clears the custom text tokenizer.
@@ -4935,7 +4960,7 @@ const _TextTokenizer = class _TextTokenizer {
     if (!tokenizer || !detectASCII) {
       this._customTokenizer = tokenizer;
     } else {
-      this._customTokenizer = (text) => _TextTokenizer.containsOnlyASCII(text) ? tokenizer(text) : this.defaultTokenizer(text);
+      this._customTokenizer = (text) => _TextTokenizer.containsOnlyASCII(text) ? this.defaultTokenizer(text) : tokenizer(text);
     }
   }
   /**
@@ -4943,6 +4968,22 @@ const _TextTokenizer = class _TextTokenizer {
    **/
   static containsOnlyASCII(text) {
     return text.charAt(0) <= "z" && !/[^ -~'-›]/.test(text);
+  }
+  /**
+   * Check if text contains RTL characters
+   */
+  static containsRTL(text) {
+    return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0590-\u05FF]/.test(
+      text
+    );
+  }
+  /**
+   * Check if text contains mixed directional content
+   */
+  static isMixedDirectional(text) {
+    const hasRTL = this.containsRTL(text);
+    const hasLTR = /[a-zA-Z0-9]/.test(text);
+    return hasRTL && hasLTR;
   }
   /**
    * Default tokenizer implementation, suitable for most languages
@@ -4972,11 +5013,36 @@ const _TextTokenizer = class _TextTokenizer {
     return [
       {
         tokens: words,
-        rtl: /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(
-          text
-        )
+        rtl: this.containsRTL(text)
       }
     ];
+  }
+  /**
+   * Bidi-aware tokenizer that properly handles mixed directional text
+   * @param text
+   * @returns
+   */
+  static bidiAwareTokenizer(text) {
+    if (this.containsOnlyASCII(text)) {
+      return this.defaultTokenizer(text);
+    }
+    if (!this.containsRTL(text)) {
+      return this.defaultTokenizer(text);
+    }
+    const isMixed = this.isMixedDirectional(text);
+    if (isMixed && this._getBidiTokenizer) {
+      const bidiTokenizer = this._getBidiTokenizer();
+      if (typeof bidiTokenizer === "function") {
+        return bidiTokenizer(text);
+      } else {
+        console.warn(
+          "Bidi tokenizer is not properly initialized, falling back to advanced RTL tokenizer"
+        );
+        return this.advancedRTLTokenizer(text);
+      }
+    } else {
+      return this.advancedRTLTokenizer(text);
+    }
   }
   /**
    * Advanced tokenizer for RTL text with punctuation separation
@@ -4984,6 +5050,10 @@ const _TextTokenizer = class _TextTokenizer {
    * @returns
    */
   static advancedRTLTokenizer(text) {
+    if (this.isMixedDirectional(text) && this._getBidiTokenizer) {
+      const bidiTokenizer = this._getBidiTokenizer();
+      return bidiTokenizer(text);
+    }
     const hasRTL = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(
       text
     );
@@ -4998,10 +5068,8 @@ const _TextTokenizer = class _TextTokenizer {
           const word = text.substring(startIndex, i);
           if (hasRTL) {
             const separatedTokens = _TextTokenizer.separateRTLPunctuation(word);
-            console.log("anand token", separatedTokens);
             words.push(...separatedTokens);
           } else {
-            console.log("anand words", word);
             words.push(word);
           }
         }
@@ -5050,6 +5118,10 @@ const _TextTokenizer = class _TextTokenizer {
 };
 // current custom tokenizer
 __publicField(_TextTokenizer, "_customTokenizer");
+// bidi tokenizer getter - will be set by external code
+__publicField(_TextTokenizer, "_getBidiTokenizer");
+// Flag to track if we've tried to load the bidi tokenizer
+__publicField(_TextTokenizer, "_bidiLoadAttempted", false);
 let TextTokenizer = _TextTokenizer;
 const TextTokenizer$1 = TextTokenizer;
 function getFontSetting(fontFace, fontStyle, fontSize, precision, defaultFontFace) {
@@ -5072,67 +5144,76 @@ function getFontSetting(fontFace, fontStyle, fontSize, precision, defaultFontFac
   return `${fontStyle} ${fontSize * precision}px ${ffs.join(",")}`;
 }
 function wrapText(context, text, wrapWidth, letterSpacing, textIndent, maxLines, suffix, wordBreak, rtl) {
-  const tokenize = TextTokenizer$1.getTokenizer();
-  const words = tokenize(text)[0].tokens;
+  const needsBidi = rtl || TextTokenizer$1.isMixedDirectional(text);
+  const tokenize = needsBidi ? (text2) => TextTokenizer$1.bidiAwareTokenizer(text2) : TextTokenizer$1.getTokenizer();
+  const spans = tokenize(text);
   const spaceWidth = measureText(context, " ", letterSpacing);
   const resultLines = [];
   let result = "";
   let spaceLeft = wrapWidth - textIndent;
-  let word = "";
-  let wordWidth = 0;
   let totalWidth = textIndent;
   let overflow = false;
-  for (let j = 0; j < words.length; j++) {
-    if (maxLines && resultLines.length > maxLines) {
-      overflow = true;
-      break;
-    }
-    word = words[j];
-    wordWidth = word === " " ? spaceWidth : measureText(context, word, letterSpacing);
-    if (wordWidth > spaceLeft) {
-      if (maxLines && resultLines.length >= maxLines - 1) {
-        result += word;
-        totalWidth += wordWidth;
+  for (const span of spans) {
+    const words = span.tokens;
+    span.rtl || false;
+    for (let j = 0; j < words.length; j++) {
+      if (maxLines && resultLines.length >= maxLines) {
         overflow = true;
         break;
       }
-      if (j > 0 && result.length > 0) {
-        resultLines.push({
-          text: result,
-          width: totalWidth
-        });
-        result = "";
-      }
-      if (j > 0 && word === " ")
-        wordWidth = 0;
-      else
-        result = word;
-      if (wordBreak && wordWidth > wrapWidth) {
-        const broken = breakWord(context, word, wrapWidth, letterSpacing);
-        let last = broken.pop();
-        for (const k of broken) {
-          resultLines.push({
-            text: k.text,
-            width: k.width
-          });
+      const word = words[j];
+      const wordWidth = word === " " ? spaceWidth : measureText(context, word, letterSpacing);
+      if (wordWidth > spaceLeft) {
+        if (maxLines && resultLines.length >= maxLines - 1) {
+          result += word;
+          totalWidth += wordWidth;
+          overflow = true;
+          break;
         }
-        result = last.text;
-        wordWidth = last.width;
+        if (result.length > 0) {
+          resultLines.push({
+            text: result,
+            width: totalWidth
+          });
+          result = "";
+        }
+        if (word === " ") {
+          totalWidth = textIndent;
+          spaceLeft = wrapWidth - textIndent;
+          continue;
+        }
+        if (wordBreak && wordWidth > wrapWidth) {
+          const broken = breakWord(context, word, wrapWidth, letterSpacing);
+          let last = broken.pop();
+          for (const k of broken) {
+            resultLines.push({
+              text: k.text,
+              width: k.width
+            });
+          }
+          result = last.text;
+          totalWidth = last.width;
+          spaceLeft = wrapWidth - last.width;
+        } else {
+          result = word;
+          totalWidth = wordWidth;
+          spaceLeft = wrapWidth - wordWidth;
+        }
+      } else {
+        spaceLeft -= wordWidth;
+        totalWidth += wordWidth;
+        result += word;
       }
-      totalWidth = wordWidth;
-      spaceLeft = wrapWidth - wordWidth;
-    } else {
-      spaceLeft -= wordWidth;
-      totalWidth += wordWidth;
-      result += word;
     }
+    if (overflow)
+      break;
   }
   if (maxLines > 0 && resultLines.length >= maxLines) {
     resultLines.length = maxLines;
   }
-  if (overflow) {
+  if (overflow && result.length > 0) {
     const suffixWidth = suffix ? measureText(context, suffix, letterSpacing) : 0;
-    while (totalWidth + suffixWidth > wrapWidth) {
+    while (totalWidth + suffixWidth > wrapWidth && result.length > 0) {
       result = result.substring(0, result.length - 1);
       totalWidth = measureText(context, result, letterSpacing);
     }
@@ -5148,35 +5229,13 @@ function wrapText(context, text, wrapWidth, letterSpacing, textIndent, maxLines,
       totalWidth += suffixWidth;
     }
   }
-  resultLines.push({
-    text: result,
-    width: totalWidth
-  });
-  if (rtl) {
-    resultLines.forEach((line) => {
-      const fixedText = addRTLPunctuation(line.text);
-      if (fixedText !== line.text) {
-        line.text = fixedText;
-        line.width = measureText(context, fixedText, letterSpacing);
-      }
+  if (result.length > 0) {
+    resultLines.push({
+      text: result,
+      width: totalWidth
     });
   }
   return resultLines;
-}
-function addRTLPunctuation(text) {
-  const words = text.split(" ");
-  const fixedWords = words.map((word) => {
-    const punctuationRegex = /([.,،:;!?؟()"""«»\-]+)$/;
-    const match = word.match(punctuationRegex);
-    if (match) {
-      const punctuation = match[0];
-      const wordWithoutPunctuation = word.replace(punctuationRegex, "");
-      return punctuation + wordWithoutPunctuation;
-    }
-    return word;
-  });
-  console.log("anand fixed word", fixedWords.join(" "));
-  return fixedWords.join(" ");
 }
 function getSuffix(maxLinesSuffix, textOverflow, wordWrap) {
   if (wordWrap) {
@@ -5562,7 +5621,7 @@ class TextTextureRenderer {
     }));
   }
   /**
-   * Simple text wrapping
+   * Simple text wrapping with bidi support for mixed content
    */
   wrapText(text, wordWrapWidth) {
     const lines = text.split(/(?:\r\n|\r|\n)/);
@@ -5574,6 +5633,7 @@ class TextTextureRenderer {
       this._settings.wordWrap
     );
     const wordBreak = this._settings.wordBreak;
+    const hasMixed = TextTokenizer$1.isMixedDirectional(text);
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const tempLines = wrapText(
@@ -5585,7 +5645,8 @@ class TextTextureRenderer {
         nowrap ? 1 : maxLines,
         suffix,
         wordBreak,
-        this._settings.rtl
+        this._settings.rtl || hasMixed
+        // Use bidi-aware wrapping for mixed content
       );
       if (maxLines === 0) {
         renderLines.push(...tempLines);
@@ -5878,8 +5939,11 @@ function layoutSpans(ctx, spans, lineStyle, wrapWidth, textIndent, maxLines, suf
   }
   if (primaryRtl) {
     for (const line2 of lines) {
-      line2.rtl = true;
-      line2.words.reverse();
+      const hasRtlWords = line2.words.some((word) => word.rtl);
+      if (hasRtlWords) {
+        line2.rtl = true;
+        line2.words.reverse();
+      }
     }
   }
   return lines;
@@ -5936,9 +6000,8 @@ class TextTextureRendererAdvanced extends TextTextureRenderer {
       return super.wrapText(text, wordWrapWidth);
     }
     const styled = this._settings.advancedRenderer;
-    const hasRTL = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(
-      text
-    );
+    const hasMixed = TextTokenizer$1.isMixedDirectional(text);
+    const hasRTL = TextTokenizer$1.containsRTL(text);
     const baseFont = getFontSetting(
       this._settings.fontFace,
       styled ? "" : this._settings.fontStyle,
@@ -5963,20 +6026,13 @@ class TextTextureRendererAdvanced extends TextTextureRenderer {
       tags = [];
     }
     const lineStyle = createLineStyle(tags, baseFont, this._settings.textColor);
-    const tokenize = hasRTL ? TextTokenizer$1.advancedRTLTokenizer : TextTokenizer$1.getTokenizer();
+    const tokenize = hasMixed || hasRTL ? (text2) => TextTokenizer$1.bidiAwareTokenizer(text2) : TextTokenizer$1.getTokenizer();
     const sourceLines = text.split(/[\r\n]/g);
     const wrappedLines = [];
     let remainingLines = this._settings.maxLines;
     for (let i = 0; i < sourceLines.length; i++) {
       const line = sourceLines[i];
       let spans = tokenize(line);
-      if (this._settings.rtl || hasRTL) {
-        spans = spans.map((span) => ({
-          ...span,
-          rtl: true
-          // Force RTL for all spans
-        }));
-      }
       const lines = layoutSpans(
         this._context,
         spans,

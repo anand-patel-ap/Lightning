@@ -42,6 +42,8 @@ import HtmlTexture from "./textures/HtmlTexture.mjs";
 import StaticTexture from "./textures/StaticTexture.mjs";
 import StaticCanvasTexture from "./textures/StaticCanvasTexture.mjs";
 import SourceTexture from "./textures/SourceTexture.mjs";
+// Add this import with the other texture imports
+import { getBidiTokenizer } from "./textures/bidiTokenizer.js";
 
 import ListComponent from "./components/ListComponent.mjs";
 import FastBlurComponent from "./components/FastBlurComponent.mjs";
@@ -143,6 +145,7 @@ export {
   ObjectListProxy,
   ObjectListWrapper,
   WebPlatform,
+  getBidiTokenizer,
 };
 
 export type * from './types/lng.types.namespace.mjs';

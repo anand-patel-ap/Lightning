@@ -5,7 +5,11 @@
     "./src/**/*.ts",
     "./src/**/*.mjs",
     "./test-d/**/*.ts",
-    "vite.config.js"
+    "vite.config.js",
+    "src/textures/RectangleTexture.js",
+    "src/textures/SourceTexture.js",
+    "src/textures/StaticCanvasTexture.js",
+    "src/textures/StaticTexture.js"
   ],
   "compilerOptions": {
     "rootDir": "./",
@@ -32,7 +36,7 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true,
+    "resolveJsonModule": true
     // Add when upgrading past TypeScript 5.0:
     // "verbatimModuleSyntax": true
   }

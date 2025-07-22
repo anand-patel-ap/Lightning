@@ -23,6 +23,17 @@ declare namespace TextTokenizer {
  */
 declare class TextTokenizer {
     static _customTokenizer: TextTokenizer.ITextTokenizerFunction | undefined;
+    static _getBidiTokenizer: (() => TextTokenizer.ITextTokenizerFunction) | undefined;
+    static _bidiLoadAttempted: boolean;
+    /**
+     * Set the bidi tokenizer getter function
+     * This should be called during app initialization
+     */
+    static setBidiTokenizerGetter(getter: () => TextTokenizer.ITextTokenizerFunction): void;
+    /**
+     * Try to load the bidi tokenizer internally
+     */
+    static tryLoadBidiTokenizer(): void;
     /**
      * Get the active tokenizer function
      * @returns
@@ -39,11 +50,25 @@ declare class TextTokenizer {
      **/
     static containsOnlyASCII(text: string): boolean;
     /**
+     * Check if text contains RTL characters
+     */
+    static containsRTL(text: string): boolean;
+    /**
+     * Check if text contains mixed directional content
+     */
+    static isMixedDirectional(text: string): boolean;
+    /**
      * Default tokenizer implementation, suitable for most languages
      * @param text
      * @returns
      */
     static defaultTokenizer(text: string): TextTokenizer.ITextTokenizerSpan[];
+    /**
+     * Bidi-aware tokenizer that properly handles mixed directional text
+     * @param text
+     * @returns
+     */
+    static bidiAwareTokenizer(text: string): TextTokenizer.ITextTokenizerSpan[];
     /**
      * Advanced tokenizer for RTL text with punctuation separation
      * @param text

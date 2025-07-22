@@ -24,7 +24,7 @@ export default class TextTextureRenderer {
      */
     measureLines(lines: string[]): ILineInfo[];
     /**
-     * Simple text wrapping
+     * Simple text wrapping with bidi support for mixed content
      */
     wrapText(text: string, wordWrapWidth: number): ILinesInfo;
 }
