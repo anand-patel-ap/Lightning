@@ -147,12 +147,9 @@ class TextTokenizer {
           // For RTL text, separate punctuation marks
           if (hasRTL) {
             const separatedTokens = TextTokenizer.separateRTLPunctuation(word);
-            console.log("anand token", separatedTokens);
 
             words.push(...separatedTokens);
           } else {
-            console.log("anand words", word);
-
             words.push(word);
           }
         }

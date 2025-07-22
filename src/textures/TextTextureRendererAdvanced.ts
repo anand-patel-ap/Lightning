@@ -93,14 +93,6 @@ export default class TextTextureRendererAdvanced extends TextTextureRenderer {
       const line = sourceLines[i]!;
       let spans = tokenize(line);
 
-      // Override RTL detection if settings specify RTL
-      if (this._settings.rtl || hasRTL) {
-        spans = spans.map((span) => ({
-          ...span,
-          rtl: true, // Force RTL for all spans
-        }));
-      }
-
       const lines = layoutSpans(
         this._context,
         spans,

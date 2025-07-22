@@ -208,7 +208,6 @@ export function addRTLPunctuation(text: string): string {
 
     return word;
   });
-  console.log("anand fixed word", fixedWords.join(" "));
 
   return fixedWords.join(" ");
 }

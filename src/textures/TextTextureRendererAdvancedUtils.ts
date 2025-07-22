@@ -396,12 +396,13 @@ export function layoutSpans(
   // reverse words of RTL text because we render left to right
   if (primaryRtl) {
     for (const line of lines) {
-      line.rtl = true; // ✅ Set line RTL property correctly
-      line.words.reverse();
+      // Only reverse if the line actually contains RTL words
+      const hasRtlWords = line.words.some((word) => word.rtl);
+      if (hasRtlWords) {
+        line.rtl = true;
+        line.words.reverse();
+      }
     }
-
-    // For RTL with ellipsis, the ellipsis should now be at the beginning (left side visually)
-    // after reversal, which is what we want - no additional manipulation needed
   }
 
   // // For RTL with ellipsis, move ellipsis to the beginning after reversal
