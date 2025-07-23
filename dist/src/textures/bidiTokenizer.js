@@ -16,6 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 import bidiFactory from "bidi-js";
 let bidi;
 // https://www.unicode.org/reports/tr9/
@@ -71,7 +73,6 @@ function mirrorSingle(char) {
  */
 function mirrorTokenPunctuation(token) {
     // Don't mirror URLs or domains
-    console.log("anand url", isUrlOrDomain(token));
     if (isUrlOrDomain(token)) {
         return token;
     }

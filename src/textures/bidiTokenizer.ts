@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 import bidiFactory, { type BidiAPI } from "bidi-js";
 import type { DirectedSpan } from "./TextTextureRendererAdvancedUtils.js";
 

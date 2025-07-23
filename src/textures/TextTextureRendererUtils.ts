@@ -98,7 +98,6 @@ export function wrapText(
   // Process all spans
   for (const span of spans) {
     const words = span.tokens;
-    const spanRtl = span.rtl || false;
 
     for (let j = 0; j < words.length; j++) {
       // overflow?

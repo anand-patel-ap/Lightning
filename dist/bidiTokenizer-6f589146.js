@@ -1,5 +1,5 @@
 /*
- * Lightning v2.15.0-rtl.2
+ * Lightning v2.15.0-rtl.3
  *
  * https://github.com/rdkcentral/Lightning
  */
@@ -809,7 +809,6 @@ function mirrorSingle(char) {
   return char;
 }
 function mirrorTokenPunctuation(token) {
-  console.log("anand url", isUrlOrDomain(token));
   if (isUrlOrDomain(token)) {
     return token;
   }
@@ -911,4 +910,4 @@ function getBidiTokenizer() {
 export {
   getBidiTokenizer
 };
-//# sourceMappingURL=bidiTokenizer-3e68dd65.js.map
+//# sourceMappingURL=bidiTokenizer-6f589146.js.map

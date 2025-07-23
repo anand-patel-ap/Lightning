@@ -1,5 +1,5 @@
 /*
- * Lightning v2.15.0-rtl.2
+ * Lightning v2.15.0-rtl.3
  *
  * https://github.com/rdkcentral/Lightning
  */
@@ -4937,7 +4937,7 @@ const _TextTokenizer = class _TextTokenizer {
       const { getBidiTokenizer } = require("./bidiTokenizer.js");
       this._getBidiTokenizer = getBidiTokenizer;
     } catch (e) {
-      import("./bidiTokenizer-3e68dd65.js").then((module) => {
+      import("./bidiTokenizer-6f589146.js").then((module) => {
         this._getBidiTokenizer = module.getBidiTokenizer;
       }).catch((err) => {
         console.warn("Could not load bidi tokenizer:", err);
@@ -5155,7 +5155,6 @@ function wrapText(context, text, wrapWidth, letterSpacing, textIndent, maxLines,
   let overflow = false;
   for (const span of spans) {
     const words = span.tokens;
-    span.rtl || false;
     for (let j = 0; j < words.length; j++) {
       if (maxLines && resultLines.length >= maxLines) {
         overflow = true;

@@ -1,5 +1,5 @@
 /*
- * Lightning v2.15.0-rtl.2
+ * Lightning v2.15.0-rtl.3
  *
  * https://github.com/rdkcentral/Lightning
  */
@@ -6570,7 +6570,6 @@ var __publicField = (obj, key, value) => {
     let overflow = false;
     for (const span of spans) {
       const words = span.tokens;
-      span.rtl || false;
       for (let j = 0; j < words.length; j++) {
         if (maxLines && resultLines.length >= maxLines) {
           overflow = true;
@@ -23482,7 +23481,6 @@ var __publicField = (obj, key, value) => {
     return char;
   }
   function mirrorTokenPunctuation(token) {
-    console.log("anand url", isUrlOrDomain(token));
     if (isUrlOrDomain(token)) {
       return token;
     }

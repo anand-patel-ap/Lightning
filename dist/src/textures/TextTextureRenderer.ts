@@ -33,7 +33,6 @@ import {
   wrapText,
 } from "./TextTextureRendererUtils.js";
 import TextTokenizer from "./TextTokenizer.js";
-import { getBidiTokenizer } from "./bidiTokenizer.js";
 
 export default class TextTextureRenderer {
   protected _stage: Stage;
