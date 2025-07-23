@@ -65,31 +65,6 @@ class TextTokenizer {
   }
 
   /**
-   * Try to load the bidi tokenizer internally
-   */
-  static tryLoadBidiTokenizer(): void {
-    if (this._bidiLoadAttempted || this._getBidiTokenizer) return;
-
-    this._bidiLoadAttempted = true;
-
-    try {
-      // Try to import the bidi tokenizer
-      // @ts-ignore
-      const { getBidiTokenizer } = require("./bidiTokenizer.js");
-      this._getBidiTokenizer = getBidiTokenizer;
-    } catch (e) {
-      // If require doesn't work, try dynamic import
-      import("./bidiTokenizer.js")
-        .then((module) => {
-          this._getBidiTokenizer = module.getBidiTokenizer;
-        })
-        .catch((err) => {
-          console.warn("Could not load bidi tokenizer:", err);
-        });
-    }
-  }
-
-  /**
    * Get the active tokenizer function
    * @returns
    */

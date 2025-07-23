@@ -31,10 +31,6 @@ declare class TextTokenizer {
      */
     static setBidiTokenizerGetter(getter: () => TextTokenizer.ITextTokenizerFunction): void;
     /**
-     * Try to load the bidi tokenizer internally
-     */
-    static tryLoadBidiTokenizer(): void;
-    /**
      * Get the active tokenizer function
      * @returns
      */

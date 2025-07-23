@@ -4927,24 +4927,6 @@ const _TextTokenizer = class _TextTokenizer {
     this._getBidiTokenizer = getter;
   }
   /**
-   * Try to load the bidi tokenizer internally
-   */
-  static tryLoadBidiTokenizer() {
-    if (this._bidiLoadAttempted || this._getBidiTokenizer)
-      return;
-    this._bidiLoadAttempted = true;
-    try {
-      const { getBidiTokenizer } = require("./bidiTokenizer.js");
-      this._getBidiTokenizer = getBidiTokenizer;
-    } catch (e) {
-      import("./bidiTokenizer-6f589146.js").then((module) => {
-        this._getBidiTokenizer = module.getBidiTokenizer;
-      }).catch((err) => {
-        console.warn("Could not load bidi tokenizer:", err);
-      });
-    }
-  }
-  /**
    * Get the active tokenizer function
    * @returns
    */
