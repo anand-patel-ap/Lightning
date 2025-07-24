@@ -76,11 +76,11 @@ export function wrapText(
   textIndent: number,
   maxLines: number,
   suffix: string,
-  wordBreak: boolean
+  wordBreak: boolean,
+  rtl: boolean
 ): ILineInfo[] {
   // Check if we need to use bidi tokenizer
   const needsBidi = TextTokenizer.isMixedDirectional(text);
-  const rtl = TextTokenizer.getStartingDirection(text) == "rtl";
 
   // Get appropriate tokenizer
   const tokenize = needsBidi

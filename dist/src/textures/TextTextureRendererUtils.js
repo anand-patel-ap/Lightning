@@ -52,10 +52,9 @@ export function getFontSetting(fontFace, fontStyle, fontSize, precision, default
 /**
  * Wrap a single line of text
  */
-export function wrapText(context, text, wrapWidth, letterSpacing, textIndent, maxLines, suffix, wordBreak) {
+export function wrapText(context, text, wrapWidth, letterSpacing, textIndent, maxLines, suffix, wordBreak, rtl) {
     // Check if we need to use bidi tokenizer
     const needsBidi = TextTokenizer.isMixedDirectional(text);
-    const rtl = TextTokenizer.getStartingDirection(text) == "rtl";
     // Get appropriate tokenizer
     const tokenize = needsBidi
         ? (text) => TextTokenizer.bidiAwareTokenizer(text)
