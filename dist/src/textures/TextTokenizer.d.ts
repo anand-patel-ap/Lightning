@@ -54,24 +54,6 @@ declare class TextTokenizer {
      */
     static isMixedDirectional(text: string): boolean;
     /**
-     * Check if the starting word/character indicates RTL or LTR layout
-     * @param text - The text to analyze
-     * @returns 'rtl' if the first significant character is RTL, 'ltr' otherwise
-     */
-    static getStartingDirection(text: string): "rtl" | "ltr";
-    /**
-     * Check if a character is neutral (doesn't have strong directional properties)
-     */
-    static isNeutralCharacter(char: string): boolean;
-    /**
-     * Check if a character code point is RTL
-     */
-    static isRTLCharacter(codePoint: number): boolean;
-    /**
-     * Check if a character code point is LTR
-     */
-    static isLTRCharacter(codePoint: number): boolean;
-    /**
      * Default tokenizer implementation, suitable for most languages
      * @param text
      * @returns

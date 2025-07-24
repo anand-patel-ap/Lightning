@@ -6383,128 +6383,6 @@ var __publicField = (obj, key, value) => {
       return hasRTL && hasLTR;
     }
     /**
-     * Check if the starting word/character indicates RTL or LTR layout
-     * @param text - The text to analyze
-     * @returns 'rtl' if the first significant character is RTL, 'ltr' otherwise
-     */
-    static getStartingDirection(text) {
-      if (!text || text.length === 0) {
-        return "ltr";
-      }
-      for (let i = 0; i < text.length; i++) {
-        const char = text.charAt(i);
-        const codePoint = text.codePointAt(i);
-        if (!codePoint)
-          continue;
-        if (_TextTokenizer.isNeutralCharacter(char)) {
-          continue;
-        }
-        if (_TextTokenizer.isRTLCharacter(codePoint)) {
-          return "rtl";
-        }
-        if (_TextTokenizer.isLTRCharacter(codePoint)) {
-          return "ltr";
-        }
-      }
-      return "ltr";
-    }
-    /**
-     * Check if a character is neutral (doesn't have strong directional properties)
-     */
-    static isNeutralCharacter(char) {
-      const code = char.charCodeAt(0);
-      if (code <= 32 || code === 127)
-        return true;
-      if (code >= 33 && code <= 47 || // !"#$%&'()*+,-./
-      code >= 58 && code <= 64 || // :;<=>?@
-      code >= 91 && code <= 96 || // [\]^_`
-      code >= 123 && code <= 126) {
-        return true;
-      }
-      if (code >= 48 && code <= 57)
-        return true;
-      if (code >= 8192 && code <= 8303)
-        return true;
-      if (code >= 8352 && code <= 8399)
-        return true;
-      if (code >= 8448 && code <= 8527)
-        return true;
-      return false;
-    }
-    /**
-     * Check if a character code point is RTL
-     */
-    static isRTLCharacter(codePoint) {
-      if (codePoint >= 1536 && codePoint <= 1791 || // Arabic
-      codePoint >= 1872 && codePoint <= 1919 || // Arabic Supplement
-      codePoint >= 2208 && codePoint <= 2303 || // Arabic Extended-A
-      codePoint >= 64336 && codePoint <= 65023 || // Arabic Presentation Forms-A
-      codePoint >= 65136 && codePoint <= 65279) {
-        return true;
-      }
-      if (codePoint >= 1424 && codePoint <= 1535 || // Hebrew
-      codePoint >= 64285 && codePoint <= 64335) {
-        return true;
-      }
-      if (codePoint >= 1984 && codePoint <= 2047 || // NKo
-      codePoint >= 2048 && codePoint <= 2111 || // Samaritan
-      codePoint >= 2112 && codePoint <= 2143 || // Mandaic
-      codePoint >= 67584 && codePoint <= 67647 || // Cypriot Syllabary
-      codePoint >= 67648 && codePoint <= 67679 || // Imperial Aramaic
-      codePoint >= 67680 && codePoint <= 67711 || // Palmyrene
-      codePoint >= 67712 && codePoint <= 67759 || // Nabataean
-      codePoint >= 67808 && codePoint <= 67839 || // Hatran
-      codePoint >= 67840 && codePoint <= 67871 || // Phoenician
-      codePoint >= 67872 && codePoint <= 67903 || // Lydian
-      codePoint >= 67968 && codePoint <= 67999 || // Meroitic Hieroglyphs
-      codePoint >= 68e3 && codePoint <= 68095 || // Meroitic Cursive
-      codePoint >= 68096 && codePoint <= 68191 || // Kharoshthi
-      codePoint >= 68192 && codePoint <= 68223 || // Old South Arabian
-      codePoint >= 68224 && codePoint <= 68255 || // Old North Arabian
-      codePoint >= 68288 && codePoint <= 68351 || // Manichaean
-      codePoint >= 68352 && codePoint <= 68415 || // Avestan
-      codePoint >= 68416 && codePoint <= 68447 || // Inscriptional Parthian
-      codePoint >= 68448 && codePoint <= 68479 || // Inscriptional Pahlavi
-      codePoint >= 68480 && codePoint <= 68527 || // Psalter Pahlavi
-      codePoint >= 68608 && codePoint <= 68687 || // Old Turkic
-      codePoint >= 69216 && codePoint <= 69247 || // Rumi Numeral Symbols
-      codePoint >= 124928 && codePoint <= 125151 || // Mende Kikakui
-      codePoint >= 125184 && codePoint <= 125279 || // Adlam
-      codePoint >= 126064 && codePoint <= 126143 || // Indic Siyaq Numbers
-      codePoint >= 126208 && codePoint <= 126287) {
-        return true;
-      }
-      return false;
-    }
-    /**
-     * Check if a character code point is LTR
-     */
-    static isLTRCharacter(codePoint) {
-      if (codePoint >= 65 && codePoint <= 90 || // A-Z
-      codePoint >= 97 && codePoint <= 122) {
-        return true;
-      }
-      if (codePoint >= 192 && codePoint <= 591 || // Latin Extended-A & B
-      codePoint >= 7680 && codePoint <= 7935) {
-        return true;
-      }
-      if (codePoint >= 880 && codePoint <= 1023)
-        return true;
-      if (codePoint >= 1024 && codePoint <= 1279 || // Cyrillic
-      codePoint >= 1280 && codePoint <= 1327) {
-        return true;
-      }
-      if (codePoint >= 256 && codePoint <= 383 || // Latin Extended-A
-      codePoint >= 384 && codePoint <= 591 || // Latin Extended-B
-      codePoint >= 7680 && codePoint <= 7935 || // Latin Extended Additional
-      codePoint >= 11360 && codePoint <= 11391 || // Latin Extended-C
-      codePoint >= 42784 && codePoint <= 43007 || // Latin Extended-D
-      codePoint >= 43824 && codePoint <= 43887) {
-        return true;
-      }
-      return false;
-    }
-    /**
      * Default tokenizer implementation, suitable for most languages
      * @param text
      * @returns
@@ -6662,9 +6540,8 @@ var __publicField = (obj, key, value) => {
     }
     return `${fontStyle} ${fontSize * precision}px ${ffs.join(",")}`;
   }
-  function wrapText(context, text, wrapWidth, letterSpacing, textIndent, maxLines, suffix, wordBreak) {
-    const needsBidi = TextTokenizer$1.isMixedDirectional(text);
-    const rtl = TextTokenizer$1.getStartingDirection(text) == "rtl";
+  function wrapText(context, text, wrapWidth, letterSpacing, textIndent, maxLines, suffix, wordBreak, rtl) {
+    const needsBidi = rtl || TextTokenizer$1.isMixedDirectional(text);
     const tokenize = needsBidi ? (text2) => TextTokenizer$1.bidiAwareTokenizer(text2) : TextTokenizer$1.getTokenizer();
     const spans = tokenize(text);
     const spaceWidth = measureText(context, " ", letterSpacing);
@@ -7140,7 +7017,7 @@ var __publicField = (obj, key, value) => {
       }));
     }
     /**
-     * Simple text wrapping
+     * Simple text wrapping with bidi support for mixed content
      */
     wrapText(text, wordWrapWidth) {
       const lines = text.split(/(?:\r\n|\r|\n)/);
@@ -7152,6 +7029,7 @@ var __publicField = (obj, key, value) => {
         this._settings.wordWrap
       );
       const wordBreak = this._settings.wordBreak;
+      const hasMixed = TextTokenizer$1.isMixedDirectional(text);
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const tempLines = wrapText(
@@ -7162,7 +7040,9 @@ var __publicField = (obj, key, value) => {
           i === 0 ? this._settings.textIndent : 0,
           nowrap ? 1 : maxLines,
           suffix,
-          wordBreak
+          wordBreak,
+          this._settings.rtl || hasMixed
+          // Use bidi-aware wrapping for mixed content
         );
         if (maxLines === 0) {
           renderLines.push(...tempLines);
