@@ -6541,7 +6541,11 @@ var __publicField = (obj, key, value) => {
     return `${fontStyle} ${fontSize * precision}px ${ffs.join(",")}`;
   }
   function wrapText(context, text, wrapWidth, letterSpacing, textIndent, maxLines, suffix, wordBreak, rtl) {
+<<<<<<< HEAD
     const needsBidi = rtl || TextTokenizer$1.isMixedDirectional(text);
+=======
+    const needsBidi = TextTokenizer$1.isMixedDirectional(text);
+>>>>>>> 89ef3f7c8b25af6ce4fbca063d1aa5b0906fcba8
     const tokenize = needsBidi ? (text2) => TextTokenizer$1.bidiAwareTokenizer(text2) : TextTokenizer$1.getTokenizer();
     const spans = tokenize(text);
     const spaceWidth = measureText(context, " ", letterSpacing);
@@ -7041,8 +7045,12 @@ var __publicField = (obj, key, value) => {
           nowrap ? 1 : maxLines,
           suffix,
           wordBreak,
+<<<<<<< HEAD
           this._settings.rtl || hasMixed
           // Use bidi-aware wrapping for mixed content
+=======
+          false
+>>>>>>> 89ef3f7c8b25af6ce4fbca063d1aa5b0906fcba8
         );
         if (maxLines === 0) {
           renderLines.push(...tempLines);

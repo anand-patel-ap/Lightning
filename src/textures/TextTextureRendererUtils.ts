@@ -80,7 +80,11 @@ export function wrapText(
   rtl: boolean
 ): ILineInfo[] {
   // Check if we need to use bidi tokenizer
+<<<<<<< HEAD
   const needsBidi = rtl || TextTokenizer.isMixedDirectional(text);
+=======
+  const needsBidi = TextTokenizer.isMixedDirectional(text);
+>>>>>>> 89ef3f7c8b25af6ce4fbca063d1aa5b0906fcba8
 
   // Get appropriate tokenizer
   const tokenize = needsBidi

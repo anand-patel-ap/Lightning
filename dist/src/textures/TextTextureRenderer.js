@@ -363,8 +363,12 @@ export default class TextTextureRenderer {
         const hasMixed = TextTokenizer.isMixedDirectional(text);
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
+<<<<<<< HEAD
             const tempLines = wrapText(this._context, line, wordWrapWidth, this._settings.letterSpacing, i === 0 ? this._settings.textIndent : 0, nowrap ? 1 : maxLines, suffix, wordBreak, this._settings.rtl || hasMixed // Use bidi-aware wrapping for mixed content
             );
+=======
+            const tempLines = wrapText(this._context, line, wordWrapWidth, this._settings.letterSpacing, i === 0 ? this._settings.textIndent : 0, nowrap ? 1 : maxLines, suffix, wordBreak, false);
+>>>>>>> 89ef3f7c8b25af6ce4fbca063d1aa5b0906fcba8
             if (maxLines === 0) {
                 // add all
                 renderLines.push(...tempLines);

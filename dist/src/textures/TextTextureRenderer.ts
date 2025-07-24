@@ -474,7 +474,11 @@ export default class TextTextureRenderer {
         nowrap ? 1 : maxLines,
         suffix,
         wordBreak,
+<<<<<<< HEAD
         this._settings.rtl || hasMixed // Use bidi-aware wrapping for mixed content
+=======
+        false
+>>>>>>> 89ef3f7c8b25af6ce4fbca063d1aa5b0906fcba8
       );
 
       if (maxLines === 0) {
