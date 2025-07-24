@@ -154,7 +154,6 @@ export function layoutSpans(
   const suffixWidth = measureText(ctx, suffix, letterSpacing);
 
   // layout state
-  // layout state
   let rtl = Boolean(spans[0]?.rtl);
   const primaryRtl = rtl;
   let line: LineLayout = {
@@ -238,7 +237,7 @@ export function layoutSpans(
       if (x > wrapWidth) {
         // last word of last line - ellipsis will be applied later
         if (lineN === maxLines) {
-          words.push({ text, width, style, rtl: primaryRtl });
+          words.push({ text, width, style, rtl });
           overflow = true;
           endReached = true;
           break;
@@ -261,7 +260,7 @@ export function layoutSpans(
                 text: k.text,
                 width: k.width,
                 style,
-                rtl: primaryRtl,
+                rtl,
               });
               appendWords();
               newLine();
@@ -270,7 +269,7 @@ export function layoutSpans(
             x = width = last.width;
           }
           // add remaining/full word
-          words.push({ text, width, style, rtl: primaryRtl });
+          words.push({ text, width, style, rtl });
           continue;
         }
 
@@ -285,7 +284,7 @@ export function layoutSpans(
         x = width;
       }
 
-      words.push({ text, width, style, rtl: primaryRtl });
+      words.push({ text, width, style, rtl });
     }
 
     // append and continue?
@@ -388,7 +387,7 @@ export function layoutSpans(
       text: suffix,
       width: suffixWidth,
       style: baseStyle,
-      rtl: primaryRtl,
+      rtl: false,
     });
     line.width += suffixWidth;
   }
@@ -396,21 +395,9 @@ export function layoutSpans(
   // reverse words of RTL text because we render left to right
   if (primaryRtl) {
     for (const line of lines) {
-      line.rtl = true; // ✅ Set line RTL property correctly
       line.words.reverse();
     }
-
-    // For RTL with ellipsis, the ellipsis should now be at the beginning (left side visually)
-    // after reversal, which is what we want - no additional manipulation needed
   }
-
-  // // For RTL with ellipsis, move ellipsis to the beginning after reversal
-  // if (overflow && suffix) {
-  //   const lastLine = lines.pop();
-  //   const ellipsis = lastLine?.words?.pop();
-  //   lastLine?.words.unshift(ellipsis as WordLayout);
-  //   lines.push(lastLine as LineLayout);
-  // }
   return lines;
 }
 

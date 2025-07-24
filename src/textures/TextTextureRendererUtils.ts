@@ -166,6 +166,7 @@ export function wrapText(
         result = result.substring(0, result.length - 1);
         totalWidth -= spaceWidth;
       }
+      console.log("anand suffix", suffix, result);
       result += suffix;
       totalWidth += suffixWidth;
     }
@@ -175,30 +176,9 @@ export function wrapText(
     text: result,
     width: totalWidth,
   });
+  console.log("anand resulted lines", resultLines);
 
   return resultLines;
-}
-
-/**
- * add punctuation positioning for RTL text
- */
-export function addRTLPunctuation(text: string): string {
-  const words = text.split(" ");
-  const fixedWords = words.map((word) => {
-    const punctuationRegex = /([.,،:;!?؟()"""«»\-]+)$/;
-    const match = word.match(punctuationRegex);
-
-    if (match) {
-      const punctuation = match[0];
-      const wordWithoutPunctuation = word.replace(punctuationRegex, "");
-      return punctuation + wordWithoutPunctuation;
-    }
-
-    return word;
-  });
-  console.log("anand fixed word", fixedWords.join(" "));
-
-  return fixedWords.join(" ");
 }
 
 /**
