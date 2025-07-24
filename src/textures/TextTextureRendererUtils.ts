@@ -76,8 +76,7 @@ export function wrapText(
   textIndent: number,
   maxLines: number,
   suffix: string,
-  wordBreak: boolean,
-  rtl: boolean
+  wordBreak: boolean
 ): ILineInfo[] {
   // Greedy wrapping algorithm that will wrap words as the line grows longer.
   // than its horizontal bounds.
@@ -167,8 +166,7 @@ export function wrapText(
         result = result.substring(0, result.length - 1);
         totalWidth -= spaceWidth;
       }
-      if (rtl) result = suffix + result;
-      else result += suffix;
+      result += suffix;
       totalWidth += suffixWidth;
     }
   }
@@ -177,16 +175,6 @@ export function wrapText(
     text: result,
     width: totalWidth,
   });
-
-  if (rtl) {
-    resultLines.forEach((line) => {
-      const fixedText = addRTLPunctuation(line.text);
-      if (fixedText !== line.text) {
-        line.text = fixedText;
-        line.width = measureText(context, fixedText, letterSpacing);
-      }
-    });
-  }
 
   return resultLines;
 }

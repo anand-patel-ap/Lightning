@@ -466,8 +466,7 @@ export default class TextTextureRenderer {
         i === 0 ? this._settings.textIndent : 0,
         nowrap ? 1 : maxLines,
         suffix,
-        wordBreak,
-        this._settings.rtl
+        wordBreak
       );
 
       if (maxLines === 0) {
