@@ -18,7 +18,6 @@
  */
 import StageUtils from "../tree/StageUtils.mjs";
 import { getFontSetting, getSuffix, measureText, wrapText, } from "./TextTextureRendererUtils.js";
-import TextTokenizer from "./TextTokenizer.js";
 export default class TextTextureRenderer {
     _stage;
     _canvas;
@@ -59,7 +58,6 @@ export default class TextTextureRenderer {
                 console.warn("[Lightning] Can't check font loading for " + fontSetting);
             }
         }
-        return Promise.resolve();
     }
     draw() {
         // We do not use a promise so that loading is performed syncronous when possible.
@@ -351,7 +349,7 @@ export default class TextTextureRenderer {
         }));
     }
     /**
-     * Simple text wrapping with bidi support for mixed content
+     * Simple text wrapping
      */
     wrapText(text, wordWrapWidth) {
         const lines = text.split(/(?:\r\n|\r|\n)/);
@@ -359,12 +357,9 @@ export default class TextTextureRenderer {
         let maxLines = this._settings.maxLines;
         const { suffix, nowrap } = getSuffix(this._settings.maxLinesSuffix, this._settings.textOverflow, this._settings.wordWrap);
         const wordBreak = this._settings.wordBreak;
-        // Check if text contains mixed directional content
-        const hasMixed = TextTokenizer.isMixedDirectional(text);
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
-            const tempLines = wrapText(this._context, line, wordWrapWidth, this._settings.letterSpacing, i === 0 ? this._settings.textIndent : 0, nowrap ? 1 : maxLines, suffix, wordBreak, this._settings.rtl || hasMixed // Use bidi-aware wrapping for mixed content
-            );
+            const tempLines = wrapText(this._context, line, wordWrapWidth, this._settings.letterSpacing, i === 0 ? this._settings.textIndent : 0, nowrap ? 1 : maxLines, suffix, wordBreak);
             if (maxLines === 0) {
                 // add all
                 renderLines.push(...tempLines);

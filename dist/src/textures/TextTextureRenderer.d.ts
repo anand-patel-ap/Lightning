@@ -10,7 +10,7 @@ export default class TextTextureRenderer {
     renderInfo: IRenderInfo | undefined;
     constructor(stage: Stage, canvas: HTMLCanvasElement, settings: Required<TextTexture.Settings>);
     setFontProperties(): void;
-    _load(): Promise<void>;
+    _load(): Promise<void> | undefined;
     draw(): void | Promise<void>;
     _calculateRenderInfo(): IRenderInfo;
     _draw(): void;
@@ -24,7 +24,7 @@ export default class TextTextureRenderer {
      */
     measureLines(lines: string[]): ILineInfo[];
     /**
-     * Simple text wrapping with bidi support for mixed content
+     * Simple text wrapping
      */
     wrapText(text: string, wordWrapWidth: number): ILinesInfo;
 }
