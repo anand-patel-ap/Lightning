@@ -32,7 +32,7 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true,
+    "resolveJsonModule": true
     // Add when upgrading past TypeScript 5.0:
     // "verbatimModuleSyntax": true
   }
