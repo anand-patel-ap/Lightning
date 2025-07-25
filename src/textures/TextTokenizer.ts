@@ -111,38 +111,6 @@ class TextTokenizer {
     );
   }
 
-  // Check if a token looks like a time range (e.g., "16:30 - 18:30" or "16:30-18:30")
-  static _isTimeRange(token: string): boolean {
-    // Match time ranges like "HH:MM - HH:MM" or "HH:MM-HH:MM" or "H:MM - H:MM"
-    return /^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$/.test(token.trim());
-  }
-
-  // Reverse time range for RTL display
-  static _reverseTimeRange(token: string): string {
-    const trimmed = token.trim();
-    const match = trimmed.match(/^(\d{1,2}:\d{2})\s*(-)\s*(\d{1,2}:\d{2})$/);
-
-    if (match) {
-      const [, startTime, separator, endTime] = match;
-      // Preserve the original spacing around the separator
-      const hasSpacesBefore = / -/.test(token);
-      const hasSpacesAfter = /- /.test(token);
-
-      let reversedSeparator = separator;
-      if (hasSpacesBefore && hasSpacesAfter) {
-        reversedSeparator = " - ";
-      } else if (hasSpacesBefore) {
-        reversedSeparator = " -";
-      } else if (hasSpacesAfter) {
-        reversedSeparator = "- ";
-      }
-
-      return `${endTime}${reversedSeparator}${startTime}`;
-    }
-
-    return token;
-  }
-
   /**
    * Check if text contains mixed directional content
    */
@@ -192,18 +160,8 @@ class TextTokenizer {
    */
   static bidiAwareTokenizer(text: string): TextTokenizer.ITextTokenizerSpan[] {
     // For text without RTL characters, use default tokenizer
-    if (!this.containsRTL(text) && !this._isTimeRange(text)) {
+    if (!this.containsRTL(text)) {
       return this.defaultTokenizer(text);
-    }
-
-    if (this._isTimeRange(text)) {
-      const word = this._reverseTimeRange(text);
-      return [
-        {
-          tokens: [word],
-          rtl: false,
-        },
-      ];
     }
 
     // Check if it's mixed directional content

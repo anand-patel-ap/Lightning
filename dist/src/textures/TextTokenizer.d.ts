@@ -49,8 +49,6 @@ declare class TextTokenizer {
      * Check if text contains RTL characters
      */
     static containsRTL(text: string): boolean;
-    static _isTimeRange(token: string): boolean;
-    static _reverseTimeRange(token: string): string;
     /**
      * Check if text contains mixed directional content
      */
