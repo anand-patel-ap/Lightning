@@ -76,87 +76,105 @@ export function wrapText(
   textIndent: number,
   maxLines: number,
   suffix: string,
-  wordBreak: boolean
+  wordBreak: boolean,
+  rtl: boolean
 ): ILineInfo[] {
-  // Greedy wrapping algorithm that will wrap words as the line grows longer.
-  // than its horizontal bounds.
-  const tokenize = TextTokenizer.getTokenizer();
-  const words = tokenize(text)[0]!.tokens;
+  // Check if we need to use bidi tokenizer
+  const needsBidi = TextTokenizer.isMixedDirectional(text);
+
+  // Get appropriate tokenizer
+  const tokenize = needsBidi
+    ? (text: string) => TextTokenizer.bidiAwareTokenizer(text)
+    : TextTokenizer.getTokenizer();
+
+  const spans = tokenize(text);
   const spaceWidth = measureText(context, " ", letterSpacing);
   const resultLines: ILineInfo[] = [];
   let result = "";
   let spaceLeft = wrapWidth - textIndent;
-  let word = "";
-  let wordWidth = 0;
   let totalWidth = textIndent;
   let overflow = false;
-  for (let j = 0; j < words.length; j++) {
-    // overflow?
-    if (maxLines && resultLines.length > maxLines) {
-      overflow = true;
-      break;
-    }
-    word = words[j]!;
-    wordWidth =
-      word === " " ? spaceWidth : measureText(context, word, letterSpacing);
 
-    if (wordWidth > spaceLeft) {
-      // last word of last line overflows
-      if (maxLines && resultLines.length >= maxLines - 1) {
-        result += word;
-        totalWidth += wordWidth;
+  // Process all spans
+  for (const span of spans) {
+    const words = span.tokens;
+
+    for (let j = 0; j < words.length; j++) {
+      // overflow?
+      if (maxLines && resultLines.length >= maxLines) {
         overflow = true;
         break;
       }
 
-      // commit line
-      if (j > 0 && result.length > 0) {
-        resultLines.push({
-          text: result,
-          width: totalWidth,
-        });
-        result = "";
-      }
+      const word = words[j]!;
+      const wordWidth =
+        word === " " ? spaceWidth : measureText(context, word, letterSpacing);
 
-      // move word to next line, but drop a trailing space
-      if (j > 0 && word === " ") wordWidth = 0;
-      else result = word;
-
-      // if word is too long, break it (caution: it could produce more than maxLines)
-      if (wordBreak && wordWidth > wrapWidth) {
-        const broken = breakWord(context, word, wrapWidth, letterSpacing);
-        let last = broken.pop()!;
-        for (const k of broken) {
-          resultLines.push({
-            text: k.text,
-            width: k.width,
-          });
+      if (wordWidth > spaceLeft) {
+        // last word of last line overflows
+        if (maxLines && resultLines.length >= maxLines - 1) {
+          result += word;
+          totalWidth += wordWidth;
+          overflow = true;
+          break;
         }
-        result = last.text;
-        wordWidth = last.width;
-      }
 
-      totalWidth = wordWidth;
-      spaceLeft = wrapWidth - wordWidth;
-    } else {
-      spaceLeft -= wordWidth;
-      totalWidth += wordWidth;
-      result += word;
+        // commit line
+        if (result.length > 0) {
+          resultLines.push({
+            text: result,
+            width: totalWidth,
+          });
+          result = "";
+        }
+
+        // move word to next line, but drop a trailing space
+        if (word === " ") {
+          totalWidth = textIndent;
+          spaceLeft = wrapWidth - textIndent;
+          continue;
+        }
+
+        // if word is too long, break it (caution: it could produce more than maxLines)
+        if (wordBreak && wordWidth > wrapWidth) {
+          const broken = breakWord(context, word, wrapWidth, letterSpacing);
+          let last = broken.pop()!;
+          for (const k of broken) {
+            resultLines.push({
+              text: k.text,
+              width: k.width,
+            });
+          }
+          result = last.text;
+          totalWidth = last.width;
+          spaceLeft = wrapWidth - last.width;
+        } else {
+          result = word;
+          totalWidth = wordWidth;
+          spaceLeft = wrapWidth - wordWidth;
+        }
+      } else {
+        spaceLeft -= wordWidth;
+        totalWidth += wordWidth;
+        result += word;
+      }
     }
+
+    if (overflow) break;
   }
-  
+
   // prevent exceeding maxLines
   if (maxLines > 0 && resultLines.length >= maxLines) {
     resultLines.length = maxLines;
   }
 
   // shorten and append ellipsis, if any
-  if (overflow) {
+  if (overflow && result.length > 0) {
     const suffixWidth = suffix
       ? measureText(context, suffix, letterSpacing)
       : 0;
 
-    while (totalWidth + suffixWidth > wrapWidth) {
+    while (totalWidth + suffixWidth > wrapWidth && result.length > 0) {
       result = result.substring(0, result.length - 1);
       totalWidth = measureText(context, result, letterSpacing);
     }
@@ -166,17 +184,42 @@ export function wrapText(
         result = result.substring(0, result.length - 1);
         totalWidth -= spaceWidth;
       }
-      result += suffix;
+      if (rtl) result = suffix + result;
+      else result += suffix;
       totalWidth += suffixWidth;
     }
   }
 
-  resultLines.push({
-    text: result,
-    width: totalWidth,
-  });
+  if (result.length > 0) {
+    resultLines.push({
+      text: result,
+      width: totalWidth,
+    });
+  }
 
   return resultLines;
+}
+
+/**
+ * add punctuation positioning for RTL text
+ * Note: This is now handled by the bidi tokenizer
+ */
+export function addRTLPunctuation(text: string): string {
+  const words = text.split(" ");
+  const fixedWords = words.map((word) => {
+    const punctuationRegex = /([.,،:;!?؟()"""«»\-]+)$/;
+    const match = word.match(punctuationRegex);
+
+    if (match) {
+      const punctuation = match[0];
+      const wordWithoutPunctuation = word.replace(punctuationRegex, "");
+      return punctuation + wordWithoutPunctuation;
+    }
+
+    return word;
+  });
+
+  return fixedWords.join(" ");
 }
 
 /**

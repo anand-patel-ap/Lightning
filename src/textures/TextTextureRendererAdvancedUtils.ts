@@ -154,6 +154,7 @@ export function layoutSpans(
   const suffixWidth = measureText(ctx, suffix, letterSpacing);
 
   // layout state
+  // layout state
   let rtl = Boolean(spans[0]?.rtl);
   const primaryRtl = rtl;
   let line: LineLayout = {
@@ -237,7 +238,7 @@ export function layoutSpans(
       if (x > wrapWidth) {
         // last word of last line - ellipsis will be applied later
         if (lineN === maxLines) {
-          words.push({ text, width, style, rtl });
+          words.push({ text, width, style, rtl: primaryRtl });
           overflow = true;
           endReached = true;
           break;
@@ -260,7 +261,7 @@ export function layoutSpans(
                 text: k.text,
                 width: k.width,
                 style,
-                rtl,
+                rtl: primaryRtl,
               });
               appendWords();
               newLine();
@@ -269,7 +270,7 @@ export function layoutSpans(
             x = width = last.width;
           }
           // add remaining/full word
-          words.push({ text, width, style, rtl });
+          words.push({ text, width, style, rtl: primaryRtl });
           continue;
         }
 
@@ -284,7 +285,7 @@ export function layoutSpans(
         x = width;
       }
 
-      words.push({ text, width, style, rtl });
+      words.push({ text, width, style, rtl: primaryRtl });
     }
 
     // append and continue?
@@ -341,7 +342,8 @@ export function layoutSpans(
           lastIndex = line.words.length - 1;
           word = line.words[lastIndex]!;
           index = lastIndex;
-          removeOppositeEnd = allowTruncation && word.width < suffixWidth * 2;
+          removeOppositeEnd =
+            (allowTruncation && word && word.width < suffixWidth * 2) ?? false;
         }
       }
 
@@ -386,7 +388,7 @@ export function layoutSpans(
       text: suffix,
       width: suffixWidth,
       style: baseStyle,
-      rtl: false,
+      rtl: primaryRtl,
     });
     line.width += suffixWidth;
   }
@@ -394,9 +396,15 @@ export function layoutSpans(
   // reverse words of RTL text because we render left to right
   if (primaryRtl) {
     for (const line of lines) {
-      line.words.reverse();
+      // Only reverse if the line actually contains RTL words
+      const hasRtlWords = line.words.some((word) => word.rtl);
+      if (hasRtlWords) {
+        line.rtl = true;
+        line.words.reverse();
+      }
     }
   }
+
   return lines;
 }
 

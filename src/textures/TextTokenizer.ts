@@ -30,7 +30,7 @@ namespace TextTokenizer {
 
   /**
    * Signature of text tokenizer function
-   * 
+   *
    * Note: space characters should be their own token.
    */
   export type ITextTokenizerFunction = (text: string) => ITextTokenizerSpan[];
@@ -46,12 +46,30 @@ class TextTokenizer {
   // current custom tokenizer
   static _customTokenizer: TextTokenizer.ITextTokenizerFunction | undefined;
 
+  // bidi tokenizer getter - will be set by external code
+  static _getBidiTokenizer:
+    | (() => TextTokenizer.ITextTokenizerFunction)
+    | undefined;
+
+  // Flag to track if we've tried to load the bidi tokenizer
+  static _bidiLoadAttempted: boolean = false;
+
+  /**
+   * Set the bidi tokenizer getter function
+   * This should be called during app initialization
+   */
+  static setBidiTokenizerGetter(
+    getter: () => TextTokenizer.ITextTokenizerFunction
+  ): void {
+    this._getBidiTokenizer = getter;
+  }
+
   /**
    * Get the active tokenizer function
    * @returns
    */
   static getTokenizer(): TextTokenizer.ITextTokenizerFunction {
-    return this._customTokenizer || this.defaultTokenizer;
+    return this._customTokenizer || ((text) => this.bidiAwareTokenizer(text));
   }
 
   /**
@@ -59,14 +77,20 @@ class TextTokenizer {
    * @param tokenizer
    * @param detectASCII - when 100% ASCII text is tokenized, the default tokenizer should be used
    */
-  static setCustomTokenizer(tokenizer?: TextTokenizer.ITextTokenizerFunction, detectASCII: boolean = false): void {
+  static setCustomTokenizer(
+    tokenizer?: TextTokenizer.ITextTokenizerFunction,
+    detectASCII: boolean = false
+  ): void {
     if (!tokenizer || !detectASCII) {
       this._customTokenizer = tokenizer;
     } else {
-      this._customTokenizer = (text) => TextTokenizer.containsOnlyASCII(text) ? tokenizer(text) : this.defaultTokenizer(text);
+      this._customTokenizer = (text) =>
+        TextTokenizer.containsOnlyASCII(text)
+          ? this.defaultTokenizer(text)
+          : tokenizer(text);
     }
   }
-  
+
   /**
    * Returns true when `text` contains only ASCII characters.
    **/
@@ -74,8 +98,26 @@ class TextTokenizer {
     // It checks the first char to fail fast for most non-English strings
     // The regex will match any character that is not in ASCII
     // - first, matching all characters between space (32) and ~ (127)
-    // - second, matching all unicode quotation marks (see https://hexdocs.pm/ex_unicode/Unicode.Category.QuoteMarks.html)
-    return text.charAt(0) <= 'z' && !/[^ -~'-›]/.test(text);
+    // - second, matching all unicode quotation marks
+    return text.charAt(0) <= "z" && !/[^ -~'-›]/.test(text);
+  }
+
+  /**
+   * Check if text contains RTL characters
+   */
+  static containsRTL(text: string): boolean {
+    return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0590-\u05FF]/.test(
+      text
+    );
+  }
+
+  /**
+   * Check if text contains mixed directional content
+   */
+  static isMixedDirectional(text: string): boolean {
+    const hasRTL = this.containsRTL(text);
+    const hasLTR = /[a-zA-Z0-9]/.test(text);
+    return hasRTL && hasLTR;
   }
 
   /**
@@ -106,8 +148,144 @@ class TextTokenizer {
     return [
       {
         tokens: words,
+        rtl: this.containsRTL(text),
       },
     ];
+  }
+
+  /**
+   * Bidi-aware tokenizer that properly handles mixed directional text
+   * @param text
+   * @returns
+   */
+  static bidiAwareTokenizer(text: string): TextTokenizer.ITextTokenizerSpan[] {
+    // For pure ASCII text, use the simple tokenizer
+    if (this.containsOnlyASCII(text)) {
+      return this.defaultTokenizer(text);
+    }
+
+    // For text without RTL characters, use default tokenizer
+    if (!this.containsRTL(text)) {
+      return this.defaultTokenizer(text);
+    }
+
+    // Check if it's mixed directional content
+    const isMixed = this.isMixedDirectional(text);
+    if (isMixed && this._getBidiTokenizer) {
+      // For mixed content, use bidi tokenizer
+      const bidiTokenizer = this._getBidiTokenizer();
+
+      // Add this null check:
+      if (typeof bidiTokenizer === "function") {
+        return bidiTokenizer(text);
+      } else {
+        console.warn(
+          "Bidi tokenizer is not properly initialized, falling back to advanced RTL tokenizer"
+        );
+        return this.advancedRTLTokenizer(text);
+      }
+    } else {
+      // For pure RTL, use the existing advancedRTLTokenizer
+      return this.advancedRTLTokenizer(text);
+    }
+  }
+
+  /**
+   * Advanced tokenizer for RTL text with punctuation separation
+   * @param text
+   * @returns
+   */
+  static advancedRTLTokenizer(
+    text: string
+  ): TextTokenizer.ITextTokenizerSpan[] {
+    // Check if it's mixed content - if so, use bidi tokenizer
+    if (this.isMixedDirectional(text) && this._getBidiTokenizer) {
+      const bidiTokenizer = this._getBidiTokenizer();
+      return bidiTokenizer(text);
+    }
+
+    // For pure RTL text, use the original logic
+    const hasRTL =
+      /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(
+        text
+      );
+
+    const words: string[] = [];
+    const len = text.length;
+    let startIndex = 0;
+    let i = 0;
+
+    for (; i < len; i++) {
+      const c = text.charAt(i);
+      if (c === " " || c === "\u200B") {
+        if (i - startIndex > 0) {
+          const word = text.substring(startIndex, i);
+
+          // For RTL text, separate punctuation marks
+          if (hasRTL) {
+            const separatedTokens = TextTokenizer.separateRTLPunctuation(word);
+
+            words.push(...separatedTokens);
+          } else {
+            words.push(word);
+          }
+        }
+        startIndex = i + 1;
+        if (c === " ") {
+          words.push(" ");
+        }
+      }
+    }
+
+    if (i - startIndex > 0) {
+      const word = text.substring(startIndex, len);
+
+      // Handle final word with punctuation
+      if (hasRTL) {
+        const separatedTokens = TextTokenizer.separateRTLPunctuation(word);
+        words.push(...separatedTokens);
+      } else {
+        words.push(word);
+      }
+    }
+
+    return [
+      {
+        tokens: words,
+        rtl: hasRTL,
+      },
+    ];
+  }
+
+  /**
+   * Separate punctuation marks from words for proper RTL handling
+   */
+  static separateRTLPunctuation(word: string): string[] {
+    const punctuationRegex = /[.,،:;!?؟()"""«»\-]/g;
+    const result: string[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = punctuationRegex.exec(word)) !== null) {
+      // Add text before punctuation
+      if (match.index > lastIndex) {
+        result.push(word.substring(lastIndex, match.index));
+      }
+
+      // Add the punctuation mark as separate token
+      result.push(match[0]);
+      lastIndex = match.index + 1;
+    }
+
+    // Add remaining text after last punctuation
+    if (lastIndex < word.length) {
+      result.push(word.substring(lastIndex));
+    }
+
+    // If no punctuation found, return the original word
+    return result.length > 0
+      ? result.filter((token) => token.length > 0)
+      : [word];
   }
 }
 

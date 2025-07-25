@@ -29,19 +29,24 @@ import type {
   ILinesInfo,
   ILineWordStyle,
 } from "./TextTextureRendererTypes.js";
-import {
-  getFontSetting,
-  getSuffix,
-} from "./TextTextureRendererUtils.js";
+import { getFontSetting, getSuffix } from "./TextTextureRendererUtils.js";
 import StageUtils from "../tree/StageUtils.mjs";
 import TextTokenizer from "./TextTokenizer.js";
 import TextTexture from "./TextTexture.mjs";
 
 export default class TextTextureRendererAdvanced extends TextTextureRenderer {
   override wrapText(text: string, wordWrapWidth: number): ILinesInfo {
+    // If wordWrap is false and no textOverflow, fall back to base renderer
+    if (!this._settings.wordWrap && !this._settings.textOverflow) {
+      return super.wrapText(text, wordWrapWidth);
+    }
+
     const styled = this._settings.advancedRenderer;
 
-    // styled renderer' base font should not include styling
+    // Check if text contains mixed directional content
+    const hasMixed = TextTokenizer.isMixedDirectional(text);
+    const hasRTL = TextTokenizer.containsRTL(text);
+
     const baseFont = getFontSetting(
       this._settings.fontFace,
       styled ? "" : this._settings.fontStyle,
@@ -69,7 +74,12 @@ export default class TextTextureRendererAdvanced extends TextTextureRenderer {
     }
 
     const lineStyle = createLineStyle(tags, baseFont, this._settings.textColor);
-    const tokenize = TextTokenizer.getTokenizer();
+
+    // Use bidi-aware tokenizer for mixed content or RTL
+    const tokenize =
+      hasMixed || hasRTL
+        ? (text: string) => TextTokenizer.bidiAwareTokenizer(text)
+        : TextTokenizer.getTokenizer();
 
     const sourceLines = text.split(/[\r\n]/g);
     const wrappedLines: LineLayout[] = [];
@@ -77,7 +87,7 @@ export default class TextTextureRendererAdvanced extends TextTextureRenderer {
 
     for (let i = 0; i < sourceLines.length; i++) {
       const line = sourceLines[i]!;
-      const spans = tokenize(line);
+      let spans = tokenize(line);
 
       const lines = layoutSpans(
         this._context,
@@ -85,7 +95,7 @@ export default class TextTextureRendererAdvanced extends TextTextureRenderer {
         lineStyle,
         wordWrapWidth,
         i === 0 ? this._settings.textIndent : 0,
-        nowrap ? 1 : remainingLines,
+        nowrap ? 0 : remainingLines,
         suffix,
         wordBreak,
         letterSpacing,
@@ -120,7 +130,7 @@ export default class TextTextureRendererAdvanced extends TextTextureRenderer {
       let x = drawLine.x;
       for (let j = 0; j < words.length; j++) {
         const { text, style, width } = words[j]!;
-        
+
         if (style !== currentStyle) {
           currentStyle = style;
           if (currentStyle) {
@@ -135,7 +145,7 @@ export default class TextTextureRendererAdvanced extends TextTextureRenderer {
         } else {
           this._fillTextWithLetterSpacing(ctx, text, x, y, letterSpacing);
         }
-        
+
         x += width;
       }
     }
