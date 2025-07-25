@@ -6374,6 +6374,30 @@ var __publicField = (obj, key, value) => {
         text
       );
     }
+    // Check if a token looks like a time range (e.g., "16:30 - 18:30" or "16:30-18:30")
+    static _isTimeRange(token) {
+      return /^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$/.test(token.trim());
+    }
+    // Reverse time range for RTL display
+    static _reverseTimeRange(token) {
+      const trimmed = token.trim();
+      const match = trimmed.match(/^(\d{1,2}:\d{2})\s*(-)\s*(\d{1,2}:\d{2})$/);
+      if (match) {
+        const [, startTime, separator, endTime] = match;
+        const hasSpacesBefore = / -/.test(token);
+        const hasSpacesAfter = /- /.test(token);
+        let reversedSeparator = separator;
+        if (hasSpacesBefore && hasSpacesAfter) {
+          reversedSeparator = " - ";
+        } else if (hasSpacesBefore) {
+          reversedSeparator = " -";
+        } else if (hasSpacesAfter) {
+          reversedSeparator = "- ";
+        }
+        return `${endTime}${reversedSeparator}${startTime}`;
+      }
+      return token;
+    }
     /**
      * Check if text contains mixed directional content
      */
@@ -6420,8 +6444,17 @@ var __publicField = (obj, key, value) => {
      * @returns
      */
     static bidiAwareTokenizer(text) {
-      if (!this.containsRTL(text)) {
+      if (!this.containsRTL(text) && !this._isTimeRange(text)) {
         return this.defaultTokenizer(text);
+      }
+      if (this._isTimeRange(text)) {
+        const word = this._reverseTimeRange(text);
+        return [
+          {
+            tokens: [word],
+            rtl: false
+          }
+        ];
       }
       const isMixed = this.isMixedDirectional(text);
       if (isMixed && this._getBidiTokenizer) {
