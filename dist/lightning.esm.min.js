@@ -11865,7 +11865,9 @@ class WebPlatform {
     this._onIdle = false;
     if (this.stage.getOption("useImageWorker")) {
       if (!window.createImageBitmap || !window.Worker) {
-        console.warn("[Lightning] Can't use image worker because browser does not have createImageBitmap and Web Worker support");
+        console.warn(
+          "[Lightning] Can't use image worker because browser does not have createImageBitmap and Web Worker support"
+        );
       } else {
         this._imageWorker = new ImageWorker();
       }
@@ -11918,10 +11920,10 @@ class WebPlatform {
     }
   }
   loop() {
+    this._onIdle = false;
     let self = this;
     let lp = function() {
       self._awaitingLoop = false;
-      self._onIdle = false;
       if (self._looping) {
         self.stage.updateFrame();
         if (self.stage.getOption("pauseRafLoopOnIdle")) {
@@ -11952,16 +11954,47 @@ class WebPlatform {
   }
   uploadGlTexture(gl, textureSource, source, options) {
     if (source instanceof ImageData || source instanceof HTMLImageElement || source instanceof HTMLVideoElement || window.ImageBitmap && source instanceof ImageBitmap) {
-      gl.texImage2D(gl.TEXTURE_2D, 0, options.internalFormat, options.format, options.type, source);
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        options.internalFormat,
+        options.format,
+        options.type,
+        source
+      );
     } else if (source instanceof HTMLCanvasElement) {
       if (Utils$1.isZiggo || this.stage.getOption("forceTxCanvasSource")) {
-        gl.texImage2D(gl.TEXTURE_2D, 0, options.internalFormat, options.format, options.type, source);
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          options.internalFormat,
+          options.format,
+          options.type,
+          source
+        );
       } else if (source.width > 0 && source.height > 0) {
         const ctx = source.getContext("2d");
-        gl.texImage2D(gl.TEXTURE_2D, 0, options.internalFormat, options.format, options.type, ctx.getImageData(0, 0, source.width, source.height));
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          options.internalFormat,
+          options.format,
+          options.type,
+          ctx.getImageData(0, 0, source.width, source.height)
+        );
       }
     } else {
-      gl.texImage2D(gl.TEXTURE_2D, 0, options.internalFormat, textureSource.w, textureSource.h, 0, options.format, options.type, source);
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        options.internalFormat,
+        textureSource.w,
+        textureSource.h,
+        0,
+        options.format,
+        options.type,
+        source
+      );
     }
   }
   handleKtxLoad(cb, src) {
@@ -12003,9 +12036,16 @@ class WebPlatform {
         }
         return p;
       };
-      const formats = Object.values(self.stage.renderer.getCompressedTextureExtensions()).filter((obj) => obj != null).map((obj) => props(obj)).reduce((prev, current) => prev.concat(current));
+      const formats = Object.values(
+        self.stage.renderer.getCompressedTextureExtensions()
+      ).filter((obj) => obj != null).map((obj) => props(obj)).reduce((prev, current) => prev.concat(current));
       if (!formats.includes(data.glInternalFormat)) {
-        console.warn("[Lightning] Unrecognized texture extension format:", src, data.glInternalFormat, self.stage.renderer.getCompressedTextureExtensions());
+        console.warn(
+          "[Lightning] Unrecognized texture extension format:",
+          src,
+          data.glInternalFormat,
+          self.stage.renderer.getCompressedTextureExtensions()
+        );
       }
       var offset = 64;
       offset += data.bytesOfKeyValueData;
@@ -12052,7 +12092,11 @@ class WebPlatform {
       let height = data.pixelHeight;
       for (var i = 0; i < data.numberOfMipmapLevels; i++) {
         const level = (width + 3 >> 2) * (height + 3 >> 2) * 8;
-        const view = new Uint8Array(arrayBuffer, pvrtcData.byteOffset + offset, level);
+        const view = new Uint8Array(
+          arrayBuffer,
+          pvrtcData.byteOffset + offset,
+          level
+        );
         data.mipmaps.push(view);
         offset += level;
         width = width >> 1;
@@ -12082,13 +12126,6 @@ class WebPlatform {
         request.abort();
       };
     } else if (this._imageWorker) {
-      if (typeof src !== "string") {
-        return cb("Invalid image URL");
-      }
-      const separatorPos = src.indexOf("//");
-      if (separatorPos !== 0 && separatorPos !== 5 && separatorPos !== 6) {
-        return cb("Invalid image URL");
-      }
       const image = this._imageWorker.create(src);
       image.onError = function(err) {
         return cb("Image load error");
@@ -12234,11 +12271,17 @@ class WebPlatform {
         this.stage.renderFrame();
       }
     };
-    document.addEventListener("visibilitychange", this._visibilityChangeHandler);
+    document.addEventListener(
+      "visibilitychange",
+      this._visibilityChangeHandler
+    );
   }
   _removeVisibilityChangeHandler() {
     if (this._visibilityChangeHandler) {
-      document.removeEventListener("visibilitychange", this._visibilityChangeHandler);
+      document.removeEventListener(
+        "visibilitychange",
+        this._visibilityChangeHandler
+      );
     }
   }
 }

@@ -14697,10 +14697,10 @@ var __publicField = (obj, key, value) => {
     }, {
       key: "loop",
       value: function loop() {
+        this._onIdle = false;
         var self2 = this;
         var _lp = function lp() {
           self2._awaitingLoop = false;
-          self2._onIdle = false;
           if (self2._looping) {
             self2.stage.updateFrame();
             if (self2.stage.getOption("pauseRafLoopOnIdle")) {
@@ -14878,13 +14878,6 @@ var __publicField = (obj, key, value) => {
             request.abort();
           };
         } else if (this._imageWorker) {
-          if (typeof src !== "string") {
-            return cb("Invalid image URL");
-          }
-          var separatorPos = src.indexOf("//");
-          if (separatorPos !== 0 && separatorPos !== 5 && separatorPos !== 6) {
-            return cb("Invalid image URL");
-          }
           var image = this._imageWorker.create(src);
           image.onError = function(err) {
             return cb("Image load error");

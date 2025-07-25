@@ -11869,7 +11869,9 @@ ${indent}  "${refs[i]}":`;
       this._onIdle = false;
       if (this.stage.getOption("useImageWorker")) {
         if (!window.createImageBitmap || !window.Worker) {
-          console.warn("[Lightning] Can't use image worker because browser does not have createImageBitmap and Web Worker support");
+          console.warn(
+            "[Lightning] Can't use image worker because browser does not have createImageBitmap and Web Worker support"
+          );
         } else {
           this._imageWorker = new ImageWorker();
         }
@@ -11922,10 +11924,10 @@ ${indent}  "${refs[i]}":`;
       }
     }
     loop() {
+      this._onIdle = false;
       let self2 = this;
       let lp = function() {
         self2._awaitingLoop = false;
-        self2._onIdle = false;
         if (self2._looping) {
           self2.stage.updateFrame();
           if (self2.stage.getOption("pauseRafLoopOnIdle")) {
@@ -11956,16 +11958,47 @@ ${indent}  "${refs[i]}":`;
     }
     uploadGlTexture(gl, textureSource, source, options) {
       if (source instanceof ImageData || source instanceof HTMLImageElement || source instanceof HTMLVideoElement || window.ImageBitmap && source instanceof ImageBitmap) {
-        gl.texImage2D(gl.TEXTURE_2D, 0, options.internalFormat, options.format, options.type, source);
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          options.internalFormat,
+          options.format,
+          options.type,
+          source
+        );
       } else if (source instanceof HTMLCanvasElement) {
         if (Utils$1.isZiggo || this.stage.getOption("forceTxCanvasSource")) {
-          gl.texImage2D(gl.TEXTURE_2D, 0, options.internalFormat, options.format, options.type, source);
+          gl.texImage2D(
+            gl.TEXTURE_2D,
+            0,
+            options.internalFormat,
+            options.format,
+            options.type,
+            source
+          );
         } else if (source.width > 0 && source.height > 0) {
           const ctx = source.getContext("2d");
-          gl.texImage2D(gl.TEXTURE_2D, 0, options.internalFormat, options.format, options.type, ctx.getImageData(0, 0, source.width, source.height));
+          gl.texImage2D(
+            gl.TEXTURE_2D,
+            0,
+            options.internalFormat,
+            options.format,
+            options.type,
+            ctx.getImageData(0, 0, source.width, source.height)
+          );
         }
       } else {
-        gl.texImage2D(gl.TEXTURE_2D, 0, options.internalFormat, textureSource.w, textureSource.h, 0, options.format, options.type, source);
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          options.internalFormat,
+          textureSource.w,
+          textureSource.h,
+          0,
+          options.format,
+          options.type,
+          source
+        );
       }
     }
     handleKtxLoad(cb, src) {
@@ -12007,9 +12040,16 @@ ${indent}  "${refs[i]}":`;
           }
           return p;
         };
-        const formats = Object.values(self2.stage.renderer.getCompressedTextureExtensions()).filter((obj) => obj != null).map((obj) => props(obj)).reduce((prev, current) => prev.concat(current));
+        const formats = Object.values(
+          self2.stage.renderer.getCompressedTextureExtensions()
+        ).filter((obj) => obj != null).map((obj) => props(obj)).reduce((prev, current) => prev.concat(current));
         if (!formats.includes(data.glInternalFormat)) {
-          console.warn("[Lightning] Unrecognized texture extension format:", src, data.glInternalFormat, self2.stage.renderer.getCompressedTextureExtensions());
+          console.warn(
+            "[Lightning] Unrecognized texture extension format:",
+            src,
+            data.glInternalFormat,
+            self2.stage.renderer.getCompressedTextureExtensions()
+          );
         }
         var offset = 64;
         offset += data.bytesOfKeyValueData;
@@ -12056,7 +12096,11 @@ ${indent}  "${refs[i]}":`;
         let height = data.pixelHeight;
         for (var i = 0; i < data.numberOfMipmapLevels; i++) {
           const level = (width + 3 >> 2) * (height + 3 >> 2) * 8;
-          const view = new Uint8Array(arrayBuffer, pvrtcData.byteOffset + offset, level);
+          const view = new Uint8Array(
+            arrayBuffer,
+            pvrtcData.byteOffset + offset,
+            level
+          );
           data.mipmaps.push(view);
           offset += level;
           width = width >> 1;
@@ -12086,13 +12130,6 @@ ${indent}  "${refs[i]}":`;
           request.abort();
         };
       } else if (this._imageWorker) {
-        if (typeof src !== "string") {
-          return cb("Invalid image URL");
-        }
-        const separatorPos = src.indexOf("//");
-        if (separatorPos !== 0 && separatorPos !== 5 && separatorPos !== 6) {
-          return cb("Invalid image URL");
-        }
         const image = this._imageWorker.create(src);
         image.onError = function(err) {
           return cb("Image load error");
@@ -12238,11 +12275,17 @@ ${indent}  "${refs[i]}":`;
           this.stage.renderFrame();
         }
       };
-      document.addEventListener("visibilitychange", this._visibilityChangeHandler);
+      document.addEventListener(
+        "visibilitychange",
+        this._visibilityChangeHandler
+      );
     }
     _removeVisibilityChangeHandler() {
       if (this._visibilityChangeHandler) {
-        document.removeEventListener("visibilitychange", this._visibilityChangeHandler);
+        document.removeEventListener(
+          "visibilitychange",
+          this._visibilityChangeHandler
+        );
       }
     }
   }
