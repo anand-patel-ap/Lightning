@@ -56,20 +56,27 @@
         const ARABIC_TEXT2 = "ذهبت إلى المكتبة، وقرأت كتابًا جديدًا."
         const TEXT = "This text is normal.\nThis text is <b>bold</b>.\nThis text is <i>italic</i>.\nThis text is <color=0xffcc2222>red</color>.\nThis text is brokennnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn up.\n"
         const MIX = "قم بزيارة www.awaan.com/login";
+        const ARABIC_TEXT3 = `لمعرفة سياسة الخصوصية، يرجى زيارة موقع Awaan على
+<color=0xff00AA8C>https://www.awaan.ae/privacy-policy</color> 
+
+ أو قم بمسح رمز الاستجابة السريعة أدناه باستخدام هاتفك المحمول أو جهازك اللوحي للوصول إلى موقعنا على الويب.`;
+ const TIME = '16:30 - 18:30';
         window.onload = function() {
     class BasicUsageExample extends lng.Application {
         static _template() {
             return {
                 text: {
-                    w: 400,
-                    wordBreak: true,
-                    // maxLines: 3,
+                    w: 960,
+                    // wordBreak: true,
+                    // maxLines: 2,
                     advancedRenderer: true,
-                    text: ARABIC_TEXT,
+                    text: TEXT,
                     textColor: 0xFF000000,
-                    rtl: true,  // Enable RTL layout
+                    // rtl: true,  // Enable RTL layout
                     textAlign: "left",
-                    wordWrap: true
+                    textOverflow: "ellipsis",
+                    wordWrap: true,
+                    wordWrapWidth: 0,
                 }
             }
         }
@@ -77,7 +84,7 @@
 
     const options = {
         stage: {
-            w: 900, 
+            w: 1920, 
             h: 900, 
             clearColor: 0xFF808080,
             canvas2d: false, 

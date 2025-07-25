@@ -120,10 +120,6 @@ class TextTokenizer {
      * @returns
      */
     static bidiAwareTokenizer(text) {
-        // For pure ASCII text, use the simple tokenizer
-        if (this.containsOnlyASCII(text)) {
-            return this.defaultTokenizer(text);
-        }
         // For text without RTL characters, use default tokenizer
         if (!this.containsRTL(text)) {
             return this.defaultTokenizer(text);

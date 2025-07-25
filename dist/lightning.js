@@ -5009,9 +5009,6 @@ var __publicField = (obj, key, value) => {
      * @returns
      */
     static bidiAwareTokenizer(text) {
-      if (this.containsOnlyASCII(text)) {
-        return this.defaultTokenizer(text);
-      }
       if (!this.containsRTL(text)) {
         return this.defaultTokenizer(text);
       }

@@ -201,28 +201,6 @@ export function wrapText(
 }
 
 /**
- * add punctuation positioning for RTL text
- * Note: This is now handled by the bidi tokenizer
- */
-export function addRTLPunctuation(text: string): string {
-  const words = text.split(" ");
-  const fixedWords = words.map((word) => {
-    const punctuationRegex = /([.,،:;!?؟()"""«»\-]+)$/;
-    const match = word.match(punctuationRegex);
-
-    if (match) {
-      const punctuation = match[0];
-      const wordWithoutPunctuation = word.replace(punctuationRegex, "");
-      return punctuation + wordWithoutPunctuation;
-    }
-
-    return word;
-  });
-
-  return fixedWords.join(" ");
-}
-
-/**
  * Determine how to handle overflow, and what suffix (e.g. ellipsis) to render
  */
 export function getSuffix(

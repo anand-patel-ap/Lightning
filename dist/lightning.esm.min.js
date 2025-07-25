@@ -5005,9 +5005,6 @@ const _TextTokenizer = class _TextTokenizer {
    * @returns
    */
   static bidiAwareTokenizer(text) {
-    if (this.containsOnlyASCII(text)) {
-      return this.defaultTokenizer(text);
-    }
     if (!this.containsRTL(text)) {
       return this.defaultTokenizer(text);
     }
