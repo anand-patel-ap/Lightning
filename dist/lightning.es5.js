@@ -6541,7 +6541,7 @@ var __publicField = (obj, key, value) => {
     return `${fontStyle} ${fontSize * precision}px ${ffs.join(",")}`;
   }
   function wrapText(context, text, wrapWidth, letterSpacing, textIndent, maxLines, suffix, wordBreak, rtl) {
-    const needsBidi = TextTokenizer$1.isMixedDirectional(text);
+    const needsBidi = rtl || TextTokenizer$1.isMixedDirectional(text);
     const tokenize = needsBidi ? (text2) => TextTokenizer$1.bidiAwareTokenizer(text2) : TextTokenizer$1.getTokenizer();
     const spans = tokenize(text);
     const spaceWidth = measureText(context, " ", letterSpacing);
@@ -6744,6 +6744,7 @@ var __publicField = (obj, key, value) => {
           console.warn("[Lightning] Can't check font loading for " + fontSetting);
         }
       }
+      return;
     }
     draw() {
       const loadPromise = this._load();
@@ -7016,7 +7017,7 @@ var __publicField = (obj, key, value) => {
       }));
     }
     /**
-     * Simple text wrapping
+     * Simple text wrapping with bidi support for mixed content
      */
     wrapText(text, wordWrapWidth) {
       const lines = text.split(/(?:\r\n|\r|\n)/);
@@ -7028,6 +7029,7 @@ var __publicField = (obj, key, value) => {
         this._settings.wordWrap
       );
       const wordBreak = this._settings.wordBreak;
+      const hasMixed = TextTokenizer$1.isMixedDirectional(text);
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const tempLines = wrapText(
@@ -7038,7 +7040,9 @@ var __publicField = (obj, key, value) => {
           i === 0 ? this._settings.textIndent : 0,
           nowrap ? 1 : maxLines,
           suffix,
-          wordBreak
+          wordBreak,
+          this._settings.rtl || hasMixed
+          // Use bidi-aware wrapping for mixed content
         );
         if (maxLines === 0) {
           renderLines.push(...tempLines);

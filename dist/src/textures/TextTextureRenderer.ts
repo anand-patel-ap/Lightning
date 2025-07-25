@@ -32,6 +32,7 @@ import {
   measureText,
   wrapText,
 } from "./TextTextureRendererUtils.js";
+import TextTokenizer from "./TextTokenizer.js";
 
 export default class TextTextureRenderer {
   protected _stage: Stage;
@@ -91,6 +92,7 @@ export default class TextTextureRenderer {
         console.warn("[Lightning] Can't check font loading for " + fontSetting);
       }
     }
+    return;
   }
 
   draw() {
@@ -444,7 +446,7 @@ export default class TextTextureRenderer {
   }
 
   /**
-   * Simple text wrapping
+   * Simple text wrapping with bidi support for mixed content
    */
   wrapText(text: string, wordWrapWidth: number): ILinesInfo {
     const lines = text.split(/(?:\r\n|\r|\n)/);
@@ -458,6 +460,9 @@ export default class TextTextureRenderer {
     );
     const wordBreak = this._settings.wordBreak;
 
+    // Check if text contains mixed directional content
+    const hasMixed = TextTokenizer.isMixedDirectional(text);
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i]!;
       const tempLines = wrapText(
@@ -468,7 +473,8 @@ export default class TextTextureRenderer {
         i === 0 ? this._settings.textIndent : 0,
         nowrap ? 1 : maxLines,
         suffix,
-        wordBreak
+        wordBreak,
+        this._settings.rtl || hasMixed // Use bidi-aware wrapping for mixed content
       );
 
       if (maxLines === 0) {
