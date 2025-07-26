@@ -4935,7 +4935,7 @@ var __publicField = (obj, key, value) => {
      * @returns
      */
     static getTokenizer() {
-      return this._customTokenizer || ((text) => this.bidiAwareTokenizer(text));
+      return this._customTokenizer || ((text, rtl) => this.bidiAwareTokenizer(text, rtl));
     }
     /**
      * Inject or clears the custom text tokenizer.
@@ -4962,6 +4962,30 @@ var __publicField = (obj, key, value) => {
       return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0590-\u05FF]/.test(
         text
       );
+    }
+    // Check if a token looks like a time range (e.g., "16:30 - 18:30" or "16:30-18:30")
+    static _isTimeRange(token) {
+      return /^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$/.test(token.trim());
+    }
+    // Reverse time range for RTL display
+    static _reverseTimeRange(token) {
+      const trimmed = token.trim();
+      const match = trimmed.match(/^(\d{1,2}:\d{2})\s*(-)\s*(\d{1,2}:\d{2})$/);
+      if (match) {
+        const [, startTime, separator, endTime] = match;
+        const hasSpacesBefore = / -/.test(token);
+        const hasSpacesAfter = /- /.test(token);
+        let reversedSeparator = separator;
+        if (hasSpacesBefore && hasSpacesAfter) {
+          reversedSeparator = " - ";
+        } else if (hasSpacesBefore) {
+          reversedSeparator = " -";
+        } else if (hasSpacesAfter) {
+          reversedSeparator = "- ";
+        }
+        return `${endTime}${reversedSeparator}${startTime}`;
+      }
+      return token;
     }
     /**
      * Check if text contains mixed directional content
@@ -5008,9 +5032,18 @@ var __publicField = (obj, key, value) => {
      * @param text
      * @returns
      */
-    static bidiAwareTokenizer(text) {
-      if (!this.containsRTL(text)) {
+    static bidiAwareTokenizer(text, rtl) {
+      if (!this.containsRTL(text) && !this._isTimeRange(text)) {
         return this.defaultTokenizer(text);
+      }
+      if (this._isTimeRange(text) && rtl) {
+        const word = this._reverseTimeRange(text);
+        return [
+          {
+            tokens: [word],
+            rtl: false
+          }
+        ];
       }
       const isMixed = this.isMixedDirectional(text);
       if (isMixed && this._getBidiTokenizer) {
@@ -5128,7 +5161,7 @@ var __publicField = (obj, key, value) => {
   }
   function wrapText(context, text, wrapWidth, letterSpacing, textIndent, maxLines, suffix, wordBreak, rtl) {
     const needsBidi = rtl || TextTokenizer$1.isMixedDirectional(text);
-    const tokenize = needsBidi ? (text2) => TextTokenizer$1.bidiAwareTokenizer(text2) : TextTokenizer$1.getTokenizer();
+    const tokenize = needsBidi ? (text2) => TextTokenizer$1.bidiAwareTokenizer(text2, rtl) : TextTokenizer$1.getTokenizer();
     const spans = tokenize(text);
     const spaceWidth = measureText(context, " ", letterSpacing);
     const resultLines = [];

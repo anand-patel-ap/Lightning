@@ -13,7 +13,7 @@ declare namespace TextTokenizer {
      *
      * Note: space characters should be their own token.
      */
-    type ITextTokenizerFunction = (text: string) => ITextTokenizerSpan[];
+    type ITextTokenizerFunction = (text: string, rtl?: boolean) => ITextTokenizerSpan[];
 }
 /**
  * Split a text string into an array of words and spaces.
@@ -49,6 +49,8 @@ declare class TextTokenizer {
      * Check if text contains RTL characters
      */
     static containsRTL(text: string): boolean;
+    static _isTimeRange(token: string): boolean;
+    static _reverseTimeRange(token: string): string;
     /**
      * Check if text contains mixed directional content
      */
@@ -64,7 +66,7 @@ declare class TextTokenizer {
      * @param text
      * @returns
      */
-    static bidiAwareTokenizer(text: string): TextTokenizer.ITextTokenizerSpan[];
+    static bidiAwareTokenizer(text: string, rtl?: boolean): TextTokenizer.ITextTokenizerSpan[];
     /**
      * Advanced tokenizer for RTL text with punctuation separation
      * @param text

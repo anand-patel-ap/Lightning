@@ -33,7 +33,10 @@ namespace TextTokenizer {
    *
    * Note: space characters should be their own token.
    */
-  export type ITextTokenizerFunction = (text: string) => ITextTokenizerSpan[];
+  export type ITextTokenizerFunction = (
+    text: string,
+    rtl?: boolean
+  ) => ITextTokenizerSpan[];
 }
 
 /**
@@ -69,7 +72,10 @@ class TextTokenizer {
    * @returns
    */
   static getTokenizer(): TextTokenizer.ITextTokenizerFunction {
-    return this._customTokenizer || ((text) => this.bidiAwareTokenizer(text));
+    return (
+      this._customTokenizer ||
+      ((text: string, rtl?: boolean) => this.bidiAwareTokenizer(text, rtl))
+    );
   }
 
   /**
@@ -109,6 +115,38 @@ class TextTokenizer {
     return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0590-\u05FF]/.test(
       text
     );
+  }
+
+  // Check if a token looks like a time range (e.g., "16:30 - 18:30" or "16:30-18:30")
+  static _isTimeRange(token: string): boolean {
+    // Match time ranges like "HH:MM - HH:MM" or "HH:MM-HH:MM" or "H:MM - H:MM"
+    return /^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$/.test(token.trim());
+  }
+
+  // Reverse time range for RTL display
+  static _reverseTimeRange(token: string): string {
+    const trimmed = token.trim();
+    const match = trimmed.match(/^(\d{1,2}:\d{2})\s*(-)\s*(\d{1,2}:\d{2})$/);
+
+    if (match) {
+      const [, startTime, separator, endTime] = match;
+      // Preserve the original spacing around the separator
+      const hasSpacesBefore = / -/.test(token);
+      const hasSpacesAfter = /- /.test(token);
+
+      let reversedSeparator = separator;
+      if (hasSpacesBefore && hasSpacesAfter) {
+        reversedSeparator = " - ";
+      } else if (hasSpacesBefore) {
+        reversedSeparator = " -";
+      } else if (hasSpacesAfter) {
+        reversedSeparator = "- ";
+      }
+
+      return `${endTime}${reversedSeparator}${startTime}`;
+    }
+
+    return token;
   }
 
   /**
@@ -158,10 +196,23 @@ class TextTokenizer {
    * @param text
    * @returns
    */
-  static bidiAwareTokenizer(text: string): TextTokenizer.ITextTokenizerSpan[] {
+  static bidiAwareTokenizer(
+    text: string,
+    rtl?: boolean
+  ): TextTokenizer.ITextTokenizerSpan[] {
     // For text without RTL characters, use default tokenizer
-    if (!this.containsRTL(text)) {
+    if (!this.containsRTL(text) && !this._isTimeRange(text)) {
       return this.defaultTokenizer(text);
+    }
+
+    if (this._isTimeRange(text) && rtl) {
+      const word = this._reverseTimeRange(text);
+      return [
+        {
+          tokens: [word],
+          rtl: false,
+        },
+      ];
     }
 
     // Check if it's mixed directional content

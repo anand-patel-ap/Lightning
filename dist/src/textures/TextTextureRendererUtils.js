@@ -57,7 +57,7 @@ export function wrapText(context, text, wrapWidth, letterSpacing, textIndent, ma
     const needsBidi = rtl || TextTokenizer.isMixedDirectional(text);
     // Get appropriate tokenizer
     const tokenize = needsBidi
-        ? (text) => TextTokenizer.bidiAwareTokenizer(text)
+        ? (text) => TextTokenizer.bidiAwareTokenizer(text, rtl)
         : TextTokenizer.getTokenizer();
     const spans = tokenize(text);
     const spaceWidth = measureText(context, " ", letterSpacing);

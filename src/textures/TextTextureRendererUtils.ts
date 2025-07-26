@@ -84,7 +84,7 @@ export function wrapText(
 
   // Get appropriate tokenizer
   const tokenize = needsBidi
-    ? (text: string) => TextTokenizer.bidiAwareTokenizer(text)
+    ? (text: string) => TextTokenizer.bidiAwareTokenizer(text, rtl)
     : TextTokenizer.getTokenizer();
 
   const spans = tokenize(text);

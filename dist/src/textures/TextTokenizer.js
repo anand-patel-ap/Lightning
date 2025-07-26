@@ -41,7 +41,8 @@ class TextTokenizer {
      * @returns
      */
     static getTokenizer() {
-        return this._customTokenizer || ((text) => this.bidiAwareTokenizer(text));
+        return (this._customTokenizer ||
+            ((text, rtl) => this.bidiAwareTokenizer(text, rtl)));
     }
     /**
      * Inject or clears the custom text tokenizer.
@@ -73,6 +74,34 @@ class TextTokenizer {
      */
     static containsRTL(text) {
         return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0590-\u05FF]/.test(text);
+    }
+    // Check if a token looks like a time range (e.g., "16:30 - 18:30" or "16:30-18:30")
+    static _isTimeRange(token) {
+        // Match time ranges like "HH:MM - HH:MM" or "HH:MM-HH:MM" or "H:MM - H:MM"
+        return /^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$/.test(token.trim());
+    }
+    // Reverse time range for RTL display
+    static _reverseTimeRange(token) {
+        const trimmed = token.trim();
+        const match = trimmed.match(/^(\d{1,2}:\d{2})\s*(-)\s*(\d{1,2}:\d{2})$/);
+        if (match) {
+            const [, startTime, separator, endTime] = match;
+            // Preserve the original spacing around the separator
+            const hasSpacesBefore = / -/.test(token);
+            const hasSpacesAfter = /- /.test(token);
+            let reversedSeparator = separator;
+            if (hasSpacesBefore && hasSpacesAfter) {
+                reversedSeparator = " - ";
+            }
+            else if (hasSpacesBefore) {
+                reversedSeparator = " -";
+            }
+            else if (hasSpacesAfter) {
+                reversedSeparator = "- ";
+            }
+            return `${endTime}${reversedSeparator}${startTime}`;
+        }
+        return token;
     }
     /**
      * Check if text contains mixed directional content
@@ -119,10 +148,19 @@ class TextTokenizer {
      * @param text
      * @returns
      */
-    static bidiAwareTokenizer(text) {
+    static bidiAwareTokenizer(text, rtl) {
         // For text without RTL characters, use default tokenizer
-        if (!this.containsRTL(text)) {
+        if (!this.containsRTL(text) && !this._isTimeRange(text)) {
             return this.defaultTokenizer(text);
+        }
+        if (this._isTimeRange(text) && rtl) {
+            const word = this._reverseTimeRange(text);
+            return [
+                {
+                    tokens: [word],
+                    rtl: false,
+                },
+            ];
         }
         // Check if it's mixed directional content
         const isMixed = this.isMixedDirectional(text);
