@@ -49,14 +49,14 @@ export default class TextTextureRendererAdvanced extends TextTextureRenderer {
         const lineStyle = createLineStyle(tags, baseFont, this._settings.textColor);
         // Use bidi-aware tokenizer for mixed content or RTL
         const tokenize = hasMixed || hasRTL
-            ? (text) => TextTokenizer.bidiAwareTokenizer(text)
+            ? (text) => TextTokenizer.bidiAwareTokenizer(text, true)
             : TextTokenizer.getTokenizer();
         const sourceLines = text.split(/[\r\n]/g);
         const wrappedLines = [];
         let remainingLines = this._settings.maxLines;
         for (let i = 0; i < sourceLines.length; i++) {
             const line = sourceLines[i];
-            let spans = tokenize(line);
+            let spans = tokenize(line, this._settings.rtl);
             const lines = layoutSpans(this._context, spans, lineStyle, wordWrapWidth, i === 0 ? this._settings.textIndent : 0, nowrap ? 0 : remainingLines, suffix, wordBreak, letterSpacing, allowTextTruncation);
             wrappedLines.push(...lines);
             if (remainingLines > 0) {

@@ -4942,7 +4942,7 @@ const _TextTokenizer = class _TextTokenizer {
     if (!tokenizer || !detectASCII) {
       this._customTokenizer = tokenizer;
     } else {
-      this._customTokenizer = (text) => _TextTokenizer.containsOnlyASCII(text) ? this.defaultTokenizer(text) : tokenizer(text);
+      this._customTokenizer = (text, rtl) => _TextTokenizer.containsOnlyASCII(text) ? this.defaultTokenizer(text, rtl) : tokenizer(text, rtl);
     }
   }
   /**
@@ -4996,7 +4996,16 @@ const _TextTokenizer = class _TextTokenizer {
    * @param text
    * @returns
    */
-  static defaultTokenizer(text) {
+  static defaultTokenizer(text, rtl = false) {
+    if (this._isTimeRange(text) && rtl) {
+      const word = this._reverseTimeRange(text);
+      return [
+        {
+          tokens: [word],
+          rtl: false
+        }
+      ];
+    }
     const words = [];
     const len = text.length;
     let startIndex = 0;
@@ -5028,9 +5037,9 @@ const _TextTokenizer = class _TextTokenizer {
    * @param text
    * @returns
    */
-  static bidiAwareTokenizer(text, rtl) {
+  static bidiAwareTokenizer(text, rtl = false) {
     if (!this.containsRTL(text) && !this._isTimeRange(text)) {
-      return this.defaultTokenizer(text);
+      return this.defaultTokenizer(text, rtl);
     }
     if (this._isTimeRange(text) && rtl) {
       const word = this._reverseTimeRange(text);
@@ -5045,7 +5054,7 @@ const _TextTokenizer = class _TextTokenizer {
     if (isMixed && this._getBidiTokenizer) {
       const bidiTokenizer = this._getBidiTokenizer();
       if (typeof bidiTokenizer === "function") {
-        return bidiTokenizer(text);
+        return bidiTokenizer(text, rtl);
       } else {
         console.warn(
           "Bidi tokenizer is not properly initialized, falling back to advanced RTL tokenizer"
@@ -5064,7 +5073,7 @@ const _TextTokenizer = class _TextTokenizer {
   static advancedRTLTokenizer(text) {
     if (this.isMixedDirectional(text) && this._getBidiTokenizer) {
       const bidiTokenizer = this._getBidiTokenizer();
-      return bidiTokenizer(text);
+      return bidiTokenizer(text, true);
     }
     const hasRTL = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(
       text
@@ -5157,8 +5166,8 @@ function getFontSetting(fontFace, fontStyle, fontSize, precision, defaultFontFac
 }
 function wrapText(context, text, wrapWidth, letterSpacing, textIndent, maxLines, suffix, wordBreak, rtl) {
   const needsBidi = rtl || TextTokenizer$1.isMixedDirectional(text);
-  const tokenize = needsBidi ? (text2) => TextTokenizer$1.bidiAwareTokenizer(text2, rtl) : TextTokenizer$1.getTokenizer();
-  const spans = tokenize(text);
+  const tokenize = needsBidi ? (text2, rtl2) => TextTokenizer$1.bidiAwareTokenizer(text2, rtl2) : TextTokenizer$1.getTokenizer();
+  const spans = tokenize(text, rtl);
   const spaceWidth = measureText(context, " ", letterSpacing);
   const resultLines = [];
   let result = "";
@@ -6037,13 +6046,13 @@ class TextTextureRendererAdvanced extends TextTextureRenderer {
       tags = [];
     }
     const lineStyle = createLineStyle(tags, baseFont, this._settings.textColor);
-    const tokenize = hasMixed || hasRTL ? (text2) => TextTokenizer$1.bidiAwareTokenizer(text2) : TextTokenizer$1.getTokenizer();
+    const tokenize = hasMixed || hasRTL ? (text2) => TextTokenizer$1.bidiAwareTokenizer(text2, true) : TextTokenizer$1.getTokenizer();
     const sourceLines = text.split(/[\r\n]/g);
     const wrappedLines = [];
     let remainingLines = this._settings.maxLines;
     for (let i = 0; i < sourceLines.length; i++) {
       const line = sourceLines[i];
-      let spans = tokenize(line);
+      let spans = tokenize(line, this._settings.rtl);
       const lines = layoutSpans(
         this._context,
         spans,

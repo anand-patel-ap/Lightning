@@ -13,7 +13,7 @@ declare namespace TextTokenizer {
      *
      * Note: space characters should be their own token.
      */
-    type ITextTokenizerFunction = (text: string, rtl?: boolean) => ITextTokenizerSpan[];
+    type ITextTokenizerFunction = (text: string, rtl: boolean) => ITextTokenizerSpan[];
 }
 /**
  * Split a text string into an array of words and spaces.
@@ -60,7 +60,7 @@ declare class TextTokenizer {
      * @param text
      * @returns
      */
-    static defaultTokenizer(text: string): TextTokenizer.ITextTokenizerSpan[];
+    static defaultTokenizer(text: string, rtl?: boolean): TextTokenizer.ITextTokenizerSpan[];
     /**
      * Bidi-aware tokenizer that properly handles mixed directional text
      * @param text
