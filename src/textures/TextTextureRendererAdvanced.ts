@@ -78,7 +78,7 @@ export default class TextTextureRendererAdvanced extends TextTextureRenderer {
     // Use bidi-aware tokenizer for mixed content or RTL
     const tokenize =
       hasMixed || hasRTL
-        ? (text: string) => TextTokenizer.bidiAwareTokenizer(text)
+        ? (text: string) => TextTokenizer.bidiAwareTokenizer(text, true)
         : TextTokenizer.getTokenizer();
 
     const sourceLines = text.split(/[\r\n]/g);
@@ -87,7 +87,7 @@ export default class TextTextureRendererAdvanced extends TextTextureRenderer {
 
     for (let i = 0; i < sourceLines.length; i++) {
       const line = sourceLines[i]!;
-      let spans = tokenize(line);
+      let spans = tokenize(line, this._settings.rtl);
 
       const lines = layoutSpans(
         this._context,

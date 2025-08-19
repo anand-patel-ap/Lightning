@@ -84,10 +84,11 @@ export function wrapText(
 
   // Get appropriate tokenizer
   const tokenize = needsBidi
-    ? (text: string) => TextTokenizer.bidiAwareTokenizer(text, rtl)
+    ? (text: string, rtl: boolean) =>
+        TextTokenizer.bidiAwareTokenizer(text, rtl)
     : TextTokenizer.getTokenizer();
 
-  const spans = tokenize(text);
+  const spans = tokenize(text, rtl);
   const spaceWidth = measureText(context, " ", letterSpacing);
   const resultLines: ILineInfo[] = [];
   let result = "";

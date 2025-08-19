@@ -35,7 +35,7 @@ namespace TextTokenizer {
    */
   export type ITextTokenizerFunction = (
     text: string,
-    rtl?: boolean
+    rtl: boolean
   ) => ITextTokenizerSpan[];
 }
 
@@ -74,7 +74,7 @@ class TextTokenizer {
   static getTokenizer(): TextTokenizer.ITextTokenizerFunction {
     return (
       this._customTokenizer ||
-      ((text: string, rtl?: boolean) => this.bidiAwareTokenizer(text, rtl))
+      ((text, rtl) => this.bidiAwareTokenizer(text, rtl))
     );
   }
 
@@ -90,10 +90,10 @@ class TextTokenizer {
     if (!tokenizer || !detectASCII) {
       this._customTokenizer = tokenizer;
     } else {
-      this._customTokenizer = (text) =>
+      this._customTokenizer = (text, rtl) =>
         TextTokenizer.containsOnlyASCII(text)
-          ? this.defaultTokenizer(text)
-          : tokenizer(text);
+          ? this.defaultTokenizer(text, rtl)
+          : tokenizer(text, rtl);
     }
   }
 
@@ -163,7 +163,19 @@ class TextTokenizer {
    * @param text
    * @returns
    */
-  static defaultTokenizer(text: string): TextTokenizer.ITextTokenizerSpan[] {
+  static defaultTokenizer(
+    text: string,
+    rtl: boolean = false
+  ): TextTokenizer.ITextTokenizerSpan[] {
+    if (this._isTimeRange(text) && rtl) {
+      const word = this._reverseTimeRange(text);
+      return [
+        {
+          tokens: [word],
+          rtl: false,
+        },
+      ];
+    }
     const words: string[] = [];
     const len = text.length;
     let startIndex = 0;
@@ -198,11 +210,11 @@ class TextTokenizer {
    */
   static bidiAwareTokenizer(
     text: string,
-    rtl?: boolean
+    rtl: boolean = false
   ): TextTokenizer.ITextTokenizerSpan[] {
     // For text without RTL characters, use default tokenizer
     if (!this.containsRTL(text) && !this._isTimeRange(text)) {
-      return this.defaultTokenizer(text);
+      return this.defaultTokenizer(text, rtl);
     }
 
     if (this._isTimeRange(text) && rtl) {
@@ -223,7 +235,7 @@ class TextTokenizer {
 
       // Add this null check:
       if (typeof bidiTokenizer === "function") {
-        return bidiTokenizer(text);
+        return bidiTokenizer(text, rtl);
       } else {
         console.warn(
           "Bidi tokenizer is not properly initialized, falling back to advanced RTL tokenizer"
@@ -247,7 +259,7 @@ class TextTokenizer {
     // Check if it's mixed content - if so, use bidi tokenizer
     if (this.isMixedDirectional(text) && this._getBidiTokenizer) {
       const bidiTokenizer = this._getBidiTokenizer();
-      return bidiTokenizer(text);
+      return bidiTokenizer(text, true);
     }
 
     // For pure RTL text, use the original logic
