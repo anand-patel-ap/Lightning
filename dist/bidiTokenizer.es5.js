@@ -1,5 +1,5 @@
 /*
- * Lightning v2.15.6-rtl
+ * Lightning v2.15.7-rtl
  *
  * https://github.com/rdkcentral/Lightning
  */
