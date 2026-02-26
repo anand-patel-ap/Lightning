@@ -814,6 +814,10 @@
       return "»";
     else if (char === "»")
       return "«";
+    else if (char === "(")
+      return ")";
+    else if (char === ")")
+      return "(";
     return char;
   }
   function mirrorTokenPunctuation(token) {

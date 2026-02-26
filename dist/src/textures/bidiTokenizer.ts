@@ -67,10 +67,12 @@ function mirrorPunctuation(punctuation: string): string {
  */
 function mirrorSingle(char: string): string {
   if (char === '"') return '"';
-  else if (char === "“") return "”";
-  else if (char === "”") return "“";
+  else if (char === "\u201C") return "\u201D";
+  else if (char === "\u201D") return "\u201C";
   else if (char === "«") return "»";
   else if (char === "»") return "«";
+  else if (char === "(") return ")";
+  else if (char === ")") return "(";
   return char;
 }
 
