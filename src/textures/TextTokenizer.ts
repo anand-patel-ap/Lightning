@@ -62,7 +62,7 @@ class TextTokenizer {
    * This should be called during app initialization
    */
   static setBidiTokenizerGetter(
-    getter: () => TextTokenizer.ITextTokenizerFunction
+    getter: () => TextTokenizer.ITextTokenizerFunction,
   ): void {
     this._getBidiTokenizer = getter;
   }
@@ -85,7 +85,7 @@ class TextTokenizer {
    */
   static setCustomTokenizer(
     tokenizer?: TextTokenizer.ITextTokenizerFunction,
-    detectASCII: boolean = false
+    detectASCII: boolean = false,
   ): void {
     if (!tokenizer || !detectASCII) {
       this._customTokenizer = tokenizer;
@@ -113,8 +113,54 @@ class TextTokenizer {
    */
   static containsRTL(text: string): boolean {
     return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0590-\u05FF]/.test(
-      text
+      text,
     );
+  }
+
+  /**
+   * Mirror map for directional punctuation in RTL context
+   */
+  static readonly RTL_MIRROR_MAP: Record<string, string> = {
+    "(": ")",
+    ")": "(",
+    "[": "]",
+    "]": "[",
+    "{": "}",
+    "}": "{",
+    "«": "»",
+    "»": "«",
+    "<": ">",
+    ">": "<",
+  };
+
+  /**
+   * Separate punctuation marks from words for proper RTL handling
+   */
+  static separateRTLPunctuation(word: string): string[] {
+    const punctuationRegex = /[.,،:;!?؟()[\]{}<>"""«»\-]/g;
+    const result: string[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = punctuationRegex.exec(word)) !== null) {
+      if (match.index > lastIndex) {
+        result.push(word.substring(lastIndex, match.index));
+      }
+
+      // Mirror directional punctuation for RTL context
+      const char = match[0];
+      const mirrored = TextTokenizer.RTL_MIRROR_MAP[char] ?? char;
+      result.push(mirrored);
+      lastIndex = match.index + 1;
+    }
+
+    if (lastIndex < word.length) {
+      result.push(word.substring(lastIndex));
+    }
+
+    return result.length > 0
+      ? result.filter((token) => token.length > 0)
+      : [word];
   }
 
   // Check if a token looks like a time range (e.g., "16:30 - 18:30" or "16:30-18:30")
@@ -165,7 +211,7 @@ class TextTokenizer {
    */
   static defaultTokenizer(
     text: string,
-    rtl: boolean = false
+    rtl: boolean = false,
   ): TextTokenizer.ITextTokenizerSpan[] {
     if (this._isTimeRange(text) && rtl) {
       const word = this._reverseTimeRange(text);
@@ -210,7 +256,7 @@ class TextTokenizer {
    */
   static bidiAwareTokenizer(
     text: string,
-    rtl: boolean = false
+    rtl: boolean = false,
   ): TextTokenizer.ITextTokenizerSpan[] {
     // For text without RTL characters, use default tokenizer
     if (!this.containsRTL(text) && !this._isTimeRange(text)) {
@@ -238,7 +284,7 @@ class TextTokenizer {
         return bidiTokenizer(text, rtl);
       } else {
         console.warn(
-          "Bidi tokenizer is not properly initialized, falling back to advanced RTL tokenizer"
+          "Bidi tokenizer is not properly initialized, falling back to advanced RTL tokenizer",
         );
         return this.advancedRTLTokenizer(text);
       }
@@ -254,7 +300,7 @@ class TextTokenizer {
    * @returns
    */
   static advancedRTLTokenizer(
-    text: string
+    text: string,
   ): TextTokenizer.ITextTokenizerSpan[] {
     // Check if it's mixed content - if so, use bidi tokenizer
     if (this.isMixedDirectional(text) && this._getBidiTokenizer) {
@@ -265,7 +311,7 @@ class TextTokenizer {
     // For pure RTL text, use the original logic
     const hasRTL =
       /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(
-        text
+        text,
       );
 
     const words: string[] = [];
@@ -313,37 +359,6 @@ class TextTokenizer {
         rtl: hasRTL,
       },
     ];
-  }
-
-  /**
-   * Separate punctuation marks from words for proper RTL handling
-   */
-  static separateRTLPunctuation(word: string): string[] {
-    const punctuationRegex = /[.,،:;!?؟()"""«»\-]/g;
-    const result: string[] = [];
-    let lastIndex = 0;
-    let match;
-
-    while ((match = punctuationRegex.exec(word)) !== null) {
-      // Add text before punctuation
-      if (match.index > lastIndex) {
-        result.push(word.substring(lastIndex, match.index));
-      }
-
-      // Add the punctuation mark as separate token
-      result.push(match[0]);
-      lastIndex = match.index + 1;
-    }
-
-    // Add remaining text after last punctuation
-    if (lastIndex < word.length) {
-      result.push(word.substring(lastIndex));
-    }
-
-    // If no punctuation found, return the original word
-    return result.length > 0
-      ? result.filter((token) => token.length > 0)
-      : [word];
   }
 }
 

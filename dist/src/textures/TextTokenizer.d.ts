@@ -49,6 +49,14 @@ declare class TextTokenizer {
      * Check if text contains RTL characters
      */
     static containsRTL(text: string): boolean;
+    /**
+     * Mirror map for directional punctuation in RTL context
+     */
+    static readonly RTL_MIRROR_MAP: Record<string, string>;
+    /**
+     * Separate punctuation marks from words for proper RTL handling
+     */
+    static separateRTLPunctuation(word: string): string[];
     static _isTimeRange(token: string): boolean;
     static _reverseTimeRange(token: string): string;
     /**
@@ -73,10 +81,6 @@ declare class TextTokenizer {
      * @returns
      */
     static advancedRTLTokenizer(text: string): TextTokenizer.ITextTokenizerSpan[];
-    /**
-     * Separate punctuation marks from words for proper RTL handling
-     */
-    static separateRTLPunctuation(word: string): string[];
 }
 export default TextTokenizer;
 //# sourceMappingURL=TextTokenizer.d.ts.map

@@ -6374,6 +6374,28 @@ var __publicField = (obj, key, value) => {
         text
       );
     }
+    /**
+     * Separate punctuation marks from words for proper RTL handling
+     */
+    static separateRTLPunctuation(word) {
+      const punctuationRegex = /[.,،:;!?؟()[\]{}<>"""«»\-]/g;
+      const result = [];
+      let lastIndex = 0;
+      let match;
+      while ((match = punctuationRegex.exec(word)) !== null) {
+        if (match.index > lastIndex) {
+          result.push(word.substring(lastIndex, match.index));
+        }
+        const char = match[0];
+        const mirrored = _TextTokenizer.RTL_MIRROR_MAP[char] ?? char;
+        result.push(mirrored);
+        lastIndex = match.index + 1;
+      }
+      if (lastIndex < word.length) {
+        result.push(word.substring(lastIndex));
+      }
+      return result.length > 0 ? result.filter((token) => token.length > 0) : [word];
+    }
     // Check if a token looks like a time range (e.g., "16:30 - 18:30" or "16:30-18:30")
     static _isTimeRange(token) {
       return /^\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}$/.test(token.trim());
@@ -6531,26 +6553,6 @@ var __publicField = (obj, key, value) => {
         }
       ];
     }
-    /**
-     * Separate punctuation marks from words for proper RTL handling
-     */
-    static separateRTLPunctuation(word) {
-      const punctuationRegex = /[.,،:;!?؟()"""«»\-]/g;
-      const result = [];
-      let lastIndex = 0;
-      let match;
-      while ((match = punctuationRegex.exec(word)) !== null) {
-        if (match.index > lastIndex) {
-          result.push(word.substring(lastIndex, match.index));
-        }
-        result.push(match[0]);
-        lastIndex = match.index + 1;
-      }
-      if (lastIndex < word.length) {
-        result.push(word.substring(lastIndex));
-      }
-      return result.length > 0 ? result.filter((token) => token.length > 0) : [word];
-    }
   };
   // current custom tokenizer
   __publicField(_TextTokenizer, "_customTokenizer");
@@ -6558,6 +6560,21 @@ var __publicField = (obj, key, value) => {
   __publicField(_TextTokenizer, "_getBidiTokenizer");
   // Flag to track if we've tried to load the bidi tokenizer
   __publicField(_TextTokenizer, "_bidiLoadAttempted", false);
+  /**
+   * Mirror map for directional punctuation in RTL context
+   */
+  __publicField(_TextTokenizer, "RTL_MIRROR_MAP", {
+    "(": ")",
+    ")": "(",
+    "[": "]",
+    "]": "[",
+    "{": "}",
+    "}": "{",
+    "«": "»",
+    "»": "«",
+    "<": ">",
+    ">": "<"
+  });
   let TextTokenizer = _TextTokenizer;
   const TextTokenizer$1 = TextTokenizer;
   function getFontSetting(fontFace, fontStyle, fontSize, precision, defaultFontFace) {

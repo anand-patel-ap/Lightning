@@ -75,6 +75,46 @@ class TextTokenizer {
     static containsRTL(text) {
         return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0590-\u05FF]/.test(text);
     }
+    /**
+     * Mirror map for directional punctuation in RTL context
+     */
+    static RTL_MIRROR_MAP = {
+        "(": ")",
+        ")": "(",
+        "[": "]",
+        "]": "[",
+        "{": "}",
+        "}": "{",
+        "«": "»",
+        "»": "«",
+        "<": ">",
+        ">": "<",
+    };
+    /**
+     * Separate punctuation marks from words for proper RTL handling
+     */
+    static separateRTLPunctuation(word) {
+        const punctuationRegex = /[.,،:;!?؟()[\]{}<>"""«»\-]/g;
+        const result = [];
+        let lastIndex = 0;
+        let match;
+        while ((match = punctuationRegex.exec(word)) !== null) {
+            if (match.index > lastIndex) {
+                result.push(word.substring(lastIndex, match.index));
+            }
+            // Mirror directional punctuation for RTL context
+            const char = match[0];
+            const mirrored = TextTokenizer.RTL_MIRROR_MAP[char] ?? char;
+            result.push(mirrored);
+            lastIndex = match.index + 1;
+        }
+        if (lastIndex < word.length) {
+            result.push(word.substring(lastIndex));
+        }
+        return result.length > 0
+            ? result.filter((token) => token.length > 0)
+            : [word];
+    }
     // Check if a token looks like a time range (e.g., "16:30 - 18:30" or "16:30-18:30")
     static _isTimeRange(token) {
         // Match time ranges like "HH:MM - HH:MM" or "HH:MM-HH:MM" or "H:MM - H:MM"
@@ -244,32 +284,6 @@ class TextTokenizer {
                 rtl: hasRTL,
             },
         ];
-    }
-    /**
-     * Separate punctuation marks from words for proper RTL handling
-     */
-    static separateRTLPunctuation(word) {
-        const punctuationRegex = /[.,،:;!?؟()"""«»\-]/g;
-        const result = [];
-        let lastIndex = 0;
-        let match;
-        while ((match = punctuationRegex.exec(word)) !== null) {
-            // Add text before punctuation
-            if (match.index > lastIndex) {
-                result.push(word.substring(lastIndex, match.index));
-            }
-            // Add the punctuation mark as separate token
-            result.push(match[0]);
-            lastIndex = match.index + 1;
-        }
-        // Add remaining text after last punctuation
-        if (lastIndex < word.length) {
-            result.push(word.substring(lastIndex));
-        }
-        // If no punctuation found, return the original word
-        return result.length > 0
-            ? result.filter((token) => token.length > 0)
-            : [word];
     }
 }
 export default TextTokenizer;
