@@ -347,8 +347,8 @@ export function layoutSpans(ctx, spans, lineStyle, wrapWidth, textIndent, maxLin
     }
     return lines;
 }
-const rePunctuationStart = /^[.,،:;!?؟()"“”«»-]+/;
-const rePunctuationEnd = /[.,،:;!?؟()"“”«»-]+$/;
+const rePunctuationStart = /^[+*=%٪$#&@؛….,،:;!?؟()"“”«»-]+/;
+const rePunctuationEnd = /[+*=%٪$#&@؛….,،:;!?؟()"“”«»-]+$/;
 export function trimWordEnd(text, rtl) {
     if (rtl) {
         return trimRtlWordEnd(text);

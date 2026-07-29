@@ -53,6 +53,18 @@ declare class TextTokenizer {
      * Mirror map for directional punctuation in RTL context
      */
     static readonly RTL_MIRROR_MAP: Record<string, string>;
+    /** Digits that form a number run: ASCII, Arabic-Indic and extended Arabic-Indic */
+    static readonly RE_DIGIT: RegExp;
+    /** Symbols that attach to an adjacent number instead of standing on their own */
+    static readonly RE_NUMBER_TERMINATOR: RegExp;
+    /**
+     * True when the character at `index` belongs to a number rather than to the
+     * surrounding text, per the bidi numeric rules (W4/W5): a separator between
+     * two digits ("3.14", "1,000", "16:30", "1+2") or a terminator next to a
+     * digit ("50%", "$20"). Such characters must stay attached to the number,
+     * otherwise reversing the RTL token order would scramble it.
+     */
+    static _isNumericContext(word: string, index: number): boolean;
     /**
      * Separate punctuation marks from words for proper RTL handling
      */

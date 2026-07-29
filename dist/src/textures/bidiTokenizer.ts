@@ -32,8 +32,8 @@ const reDirectionalFormat =
 
 const reQuoteStart = /^["""«»]/;
 const reQuoteEnd = /["""«»]$/;
-const rePunctuationStart = /^[.,،:;!?()"-]+/;
-const rePunctuationEnd = /[.,،:;!?()"-]+$/;
+const rePunctuationStart = /^[+*=%٪$#&@؛….,،:;!?()"-]+/;
+const rePunctuationEnd = /[+*=%٪$#&@؛….,،:;!?()"-]+$/;
 
 // Check if a token looks like a URL or domain
 function isUrlOrDomain(token: string): boolean {

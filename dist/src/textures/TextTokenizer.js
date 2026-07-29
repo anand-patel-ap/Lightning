@@ -90,15 +90,39 @@ class TextTokenizer {
         "<": ">",
         ">": "<",
     };
+    /** Digits that form a number run: ASCII, Arabic-Indic and extended Arabic-Indic */
+    static RE_DIGIT = /[0-9٠-٩۰-۹]/;
+    /** Symbols that attach to an adjacent number instead of standing on their own */
+    static RE_NUMBER_TERMINATOR = /[+\-%٪$#]/;
+    /**
+     * True when the character at `index` belongs to a number rather than to the
+     * surrounding text, per the bidi numeric rules (W4/W5): a separator between
+     * two digits ("3.14", "1,000", "16:30", "1+2") or a terminator next to a
+     * digit ("50%", "$20"). Such characters must stay attached to the number,
+     * otherwise reversing the RTL token order would scramble it.
+     */
+    static _isNumericContext(word, index) {
+        const prevDigit = TextTokenizer.RE_DIGIT.test(word.charAt(index - 1));
+        const nextDigit = TextTokenizer.RE_DIGIT.test(word.charAt(index + 1));
+        if (prevDigit && nextDigit) {
+            return true;
+        }
+        return ((prevDigit || nextDigit) &&
+            TextTokenizer.RE_NUMBER_TERMINATOR.test(word.charAt(index)));
+    }
     /**
      * Separate punctuation marks from words for proper RTL handling
      */
     static separateRTLPunctuation(word) {
-        const punctuationRegex = /[.,،:;!?؟()[\]{}<>"""«»\-]/g;
+        const punctuationRegex = /[+*=%٪$#&@؛….,،:;!?؟()[\]{}<>"""«»\-]/g;
         const result = [];
         let lastIndex = 0;
         let match;
         while ((match = punctuationRegex.exec(word)) !== null) {
+            // keep number punctuation ("50%", "16:30", "1,000") attached to the digits
+            if (TextTokenizer._isNumericContext(word, match.index)) {
+                continue;
+            }
             if (match.index > lastIndex) {
                 result.push(word.substring(lastIndex, match.index));
             }

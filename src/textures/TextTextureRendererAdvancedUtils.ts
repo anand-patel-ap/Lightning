@@ -408,8 +408,8 @@ export function layoutSpans(
   return lines;
 }
 
-const rePunctuationStart = /^[.,،:;!?؟()"“”«»-]+/;
-const rePunctuationEnd = /[.,،:;!?؟()"“”«»-]+$/;
+const rePunctuationStart = /^[+*=%٪$#&@؛….,،:;!?؟()"“”«»-]+/;
+const rePunctuationEnd = /[+*=%٪$#&@؛….,،:;!?؟()"“”«»-]+$/;
 
 export function trimWordEnd(text: string, rtl: boolean): string {
   if (rtl) {

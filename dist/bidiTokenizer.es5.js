@@ -1,5 +1,5 @@
 /*
- * Lightning v2.15.7-rtl
+ * Lightning v2.15.8-rtl
  *
  * https://github.com/rdkcentral/Lightning
  */
@@ -782,8 +782,8 @@
   const reDirectionalFormat = /[\u202A\u202B\u202C\u202D\u202E\u202E\u2066\u2067\u2068\u2069]/g;
   const reQuoteStart = /^["""«»]/;
   const reQuoteEnd = /["""«»]$/;
-  const rePunctuationStart = /^[.,،:;!?()"-]+/;
-  const rePunctuationEnd = /[.,،:;!?()"-]+$/;
+  const rePunctuationStart = /^[+*=%٪$#&@؛….,،:;!?()"-]+/;
+  const rePunctuationEnd = /[+*=%٪$#&@؛….,،:;!?()"-]+$/;
   function isUrlOrDomain(token) {
     return /^(https?:\/\/|www\.|[a-zA-Z0-9-]+\.(com|org|net|edu|gov|io|co|uk|de|fr|jp|cn|in|au|br|ca|es|it|nl|ru|se|no|dk|fi|pl|pt|tr|kr|tw|hk|sg|my|th|vn|id|ph|ae|sa|eg|za|ng|ke|ma|tn|gh|et|ug|tz|mz|dz|ao|cm|ci|sn|bf|ne|ml|mg|cg|zm|zw|bw|na|sz|ls|mw|rw|bi|dj|so|er|km|mu|sc|mv|ly|sd|ss|cf|td|gn|mr|tg|bj|gw|sl|lr|gm|cv|st|gq))/i.test(
       token

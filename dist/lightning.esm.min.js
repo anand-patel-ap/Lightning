@@ -1,5 +1,5 @@
 /*
- * Lightning v2.15.7-rtl
+ * Lightning v2.15.8-rtl
  *
  * https://github.com/rdkcentral/Lightning
  */
@@ -4960,14 +4960,32 @@ const _TextTokenizer = class _TextTokenizer {
     );
   }
   /**
+   * True when the character at `index` belongs to a number rather than to the
+   * surrounding text, per the bidi numeric rules (W4/W5): a separator between
+   * two digits ("3.14", "1,000", "16:30", "1+2") or a terminator next to a
+   * digit ("50%", "$20"). Such characters must stay attached to the number,
+   * otherwise reversing the RTL token order would scramble it.
+   */
+  static _isNumericContext(word, index) {
+    const prevDigit = _TextTokenizer.RE_DIGIT.test(word.charAt(index - 1));
+    const nextDigit = _TextTokenizer.RE_DIGIT.test(word.charAt(index + 1));
+    if (prevDigit && nextDigit) {
+      return true;
+    }
+    return (prevDigit || nextDigit) && _TextTokenizer.RE_NUMBER_TERMINATOR.test(word.charAt(index));
+  }
+  /**
    * Separate punctuation marks from words for proper RTL handling
    */
   static separateRTLPunctuation(word) {
-    const punctuationRegex = /[.,،:;!?؟()[\]{}<>"""«»\-]/g;
+    const punctuationRegex = /[+*=%٪$#&@؛….,،:;!?؟()[\]{}<>"""«»\-]/g;
     const result = [];
     let lastIndex = 0;
     let match;
     while ((match = punctuationRegex.exec(word)) !== null) {
+      if (_TextTokenizer._isNumericContext(word, match.index)) {
+        continue;
+      }
       if (match.index > lastIndex) {
         result.push(word.substring(lastIndex, match.index));
       }
@@ -5160,6 +5178,10 @@ __publicField(_TextTokenizer, "RTL_MIRROR_MAP", {
   "<": ">",
   ">": "<"
 });
+/** Digits that form a number run: ASCII, Arabic-Indic and extended Arabic-Indic */
+__publicField(_TextTokenizer, "RE_DIGIT", /[0-9٠-٩۰-۹]/);
+/** Symbols that attach to an adjacent number instead of standing on their own */
+__publicField(_TextTokenizer, "RE_NUMBER_TERMINATOR", /[+\-%٪$#]/);
 let TextTokenizer = _TextTokenizer;
 const TextTokenizer$1 = TextTokenizer;
 function getFontSetting(fontFace, fontStyle, fontSize, precision, defaultFontFace) {
@@ -5985,8 +6007,8 @@ function layoutSpans(ctx, spans, lineStyle, wrapWidth, textIndent, maxLines, suf
   }
   return lines;
 }
-const rePunctuationStart = /^[.,،:;!?؟()"“”«»-]+/;
-const rePunctuationEnd = /[.,،:;!?؟()"“”«»-]+$/;
+const rePunctuationStart = /^[+*=%٪$#&@؛….,،:;!?؟()"“”«»-]+/;
+const rePunctuationEnd = /[+*=%٪$#&@؛….,،:;!?؟()"“”«»-]+$/;
 function trimWordEnd(text, rtl) {
   if (rtl) {
     return trimRtlWordEnd(text);
